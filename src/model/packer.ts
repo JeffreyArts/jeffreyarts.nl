@@ -137,15 +137,16 @@ export default class Packer {
             const lowestBlock = _.reverse(_.sortBy(this.resultPositions, block => block.y + block.height))[0]
             const lastBlock = this.blocks[this.blocks.length - 1]
             
-
-            this.resultPositions.push({
-                width: lastBlock.width,
-                height: lastBlock.height,
-                x: 0,
-                y: lowestBlock.y + lowestBlock.height,
-                id: lastBlock.id,
-                sourceId: "none"
-            })
+            if (lowestBlock) {
+                this.resultPositions.push({
+                    width: lastBlock.width,
+                    height: lastBlock.height,
+                    x: 0,
+                    y: lowestBlock.y + lowestBlock.height,
+                    id: lastBlock.id,
+                    sourceId: "none"
+                })
+            }
         }
 
         // Als er geen volgende blok gevonden wordt, plaats het onderaan

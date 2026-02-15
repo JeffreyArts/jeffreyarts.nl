@@ -125,11 +125,13 @@ export default defineComponent ({
         this.$el.parentElement.style.zIndex = 1
 
         window.addEventListener("resize", this.scaleText)
-        window.addEventListener("layoutLoaded", this.setDefaultFontSize) 
+        window.addEventListener("layoutChange", this.setDefaultFontSize) 
+        // window.addEventListener("layoutLoaded", this.setDefaultFontSize) 
     },
     unmounted() {
         window.removeEventListener("resize", this.scaleText)
-        window.removeEventListener("layoutLoaded", this.setDefaultFontSize) 
+        window.removeEventListener("layoutChange", this.setDefaultFontSize)
+        // window.removeEventListener("layoutLoaded", this.setDefaultFontSize) 
     },
     methods: {
         fadeOutLetters() {
@@ -146,13 +148,15 @@ export default defineComponent ({
         setDefaultFontSize(event: Event) {
             const customEvent = event as CustomEvent
             const blockID = this.$el.parentElement.id.replace("block-", "")
-            if (customEvent.detail.blocks) {
-                const block = customEvent.detail.blocks.find((block: any) => block.id === blockID)
-                if (block) {
-                    this.scaleText()
-                    this.defaultFontSize = this.fontSize
-                    this.scaleText()
-                }
+            let block = this.$el.parentElement
+
+            if (customEvent?.detail?.blocks) {
+                block = customEvent.detail.blocks.find((block: any) => block.id === blockID)
+            }
+            if (block) {
+                this.scaleText()
+                this.defaultFontSize = this.fontSize
+                this.scaleText()
             }
         },
         fadeInLetters() {
@@ -374,14 +378,14 @@ export default defineComponent ({
 .slider {
     position: absolute;
     bottom: -32px;
-    left: 0;
     width: calc(100% - 64px);
     min-width: 128px;
     max-width: 320px;
     height: 64px;
     padding: 0 16px;
     // background-color: #ccc;
-    left: 25%;
+    left: 50%;
+    translate: -50% 0;
     opacity: 0;
     transition: opacity 0.3s ease-in-out;
 
