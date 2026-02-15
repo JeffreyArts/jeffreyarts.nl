@@ -102,6 +102,7 @@ export default defineComponent ({
             defaultLines: 0,
             lines: 0,
             lineHeight: 1,
+            imageLoadTimeout: undefined as undefined | NodeJS.timeout,
             defaultCharactersPerLine: 0,
             charactersPerLine: 0,
             height: 0,
@@ -131,7 +132,7 @@ export default defineComponent ({
     unmounted() {
         window.removeEventListener("resize", this.scaleText)
         window.removeEventListener("layoutChange", this.setDefaultFontSize)
-        // window.removeEventListener("layoutLoaded", this.setDefaultFontSize) 
+        window.removeEventListener("layoutLoaded", this.setDefaultFontSize) 
     },
     methods: {
         fadeOutLetters() {
@@ -279,17 +280,27 @@ export default defineComponent ({
                 window.addEventListener("touchend", this.endSlider)
             }
         },
-        async setSliderValue(xValue: number) {
-            // xValue is the pixelValue of X in relation to the parent container
-            // we need to convert this to a value between 0 and 1
+        calculateSliderValue(xValue: number) {
             const slider = this.$refs.slider as HTMLElement
             const rects = slider.getBoundingClientRect()
-
-            
-            this.slider.value = Math.round((xValue / rects.width) * (this.slider.max - this.slider.min) + this.slider.min)
+            return Math.round((xValue / rects.width) * (this.slider.max - this.slider.min) + this.slider.min)
+        },
+        async setSliderValue(xValue: number) {
             this.updateKnobPosition()
 
-            this.imageLoading = this.loadAciiImage()
+            if (this.calculateSliderValue(xValue) == this.slider.value ) {
+                return
+            }
+
+            if (this.imageLoadTimeout) {
+                clearTimeout(this.imageLoadTimeout)
+            }
+
+            this.imageLoadTimeout = setTimeout(() => {
+                this.imageLoading = this.loadAciiImage()
+            }, 100)
+
+            this.slider.value = this.calculateSliderValue(xValue)
         },
         updateKnobPosition() {
             const slider = this.$refs.slider as HTMLElement
