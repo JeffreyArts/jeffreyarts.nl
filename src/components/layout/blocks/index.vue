@@ -119,6 +119,9 @@ export default defineComponent ({
     &.__isFixed {
         position: absolute;
     } 
+    &.__isLoaded {
+        opacity: 0;
+    } 
 
     // Display blockType for dev purposes
     // > *:after {

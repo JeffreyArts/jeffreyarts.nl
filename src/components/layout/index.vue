@@ -83,15 +83,15 @@ export default defineComponent ({
     computed: {
     },
     watch:{
-        "$route.path": {
-            handler() {
-                this.firstLoad = true
-            },
-            immediate: false
-        },
+        // "$route.path": {
+        //     handler() {
+        //         this.firstLoad = true
+        //     },
+        //     immediate: false
+        // },
         "options.layoutSize": {
             async handler() {
-                this.updateAllBlockPositions()
+                // this.updateAllBlockPositions()
             },
             immediate: true
         },
@@ -268,6 +268,12 @@ export default defineComponent ({
             return `${position[type]}px`
         },
         addBlocks(newBlocks: BlockType[]){
+            if (this.newBlocks.length == 0) {
+                this.firstLoad = true
+            } else {
+                this.firstLoad = false
+            }
+
             newBlocks.forEach(block => {
                 const blockExists = this.blocks.find(b => block.id === b.id)
                 if (blockExists) { return  }
@@ -315,7 +321,7 @@ export default defineComponent ({
                 }
 
                 if (!onlyWidth) {
-                    console.log(`paperBlock[${newBlock.block.id}]`,"OriginalWidth",blockEl.clientWidth, "OriginalHeight", blockEl.clientHeight, "width:", newBlock.packerBlock.width, "height", newBlock.packerBlock.height,"posWidth",newBlock.position.width, "posHeight", newBlock.position.height, "posX",newBlock.position.x, "posY", newBlock.position.y)
+                    // console.log(`paperBlock[${newBlock.block.id}]`,"OriginalWidth",blockEl.clientWidth, "OriginalHeight", blockEl.clientHeight, "width:", newBlock.packerBlock.width, "height", newBlock.packerBlock.height,"posWidth",newBlock.position.width, "posHeight", newBlock.position.height, "posX",newBlock.position.x, "posY", newBlock.position.y)
                 }
                 // console.log("newBlock.position", this.widthRatio, this.layoutWidth,)
             } else {
@@ -357,6 +363,8 @@ export default defineComponent ({
                 })
                 dispatchEvent(new CustomEvent('layoutChange'))   
                 this.updateLayoutHeight()
+            
+                this.fadeInNewBlocks()
 
 
                 // Communicate that the layout has been loaded
@@ -364,6 +372,42 @@ export default defineComponent ({
                 this.$emit("loaded", this.loaded)
                 dispatchEvent(new CustomEvent('layoutLoaded', { detail: this.options }))   
             }, 1000)
+        },
+        async addNewBlockPositions() {
+            if (!this.$el) {
+                return
+            }
+            const ONLY_WIDTH = true
+
+            // Set helper variables
+            this.layoutWidth = this.$el.clientWidth
+            this.widthRatio = (this.layoutWidth) / this.options.layoutSize
+            // Sort by position
+            this.newBlocks = this.newBlocks.sort((a, b) => { 
+                if (typeof a.position?.position === "number" && typeof b.position?.position === "number") {
+                    return a.position.position - b.position.position
+                }
+            });
+            console.log("this.newBlocks", this.newBlocks)
+            
+
+            // Set all the correct widths
+            this.newBlocks.forEach(newBlock => {
+                // If there is already a domElement connected, it is not really new and can be skipped
+                if (newBlock.el) {
+                    return
+                }
+                this.addBlockToPacker(newBlock.block.id)
+            })
+            dispatchEvent(new CustomEvent('layoutChange'))   
+            this.updateLayoutHeight()
+            
+            this.fadeInNewBlocks()
+
+            // Bit shady to not update height second time, but shouldn't be necessary cause the blocks that use this feature don't have such requirement (for now)
+            setTimeout(() => {
+                this.updateLayoutHeight()
+            }, 500)
         },
         async blockLoaded(block: BlockType) {
             if (block.loaded) {
@@ -395,8 +439,37 @@ export default defineComponent ({
             
             // if all blocks are loaded, set their dimensions and positions
             if (this.blocks.every(block => block.loaded)) {
-                this.updateAllBlockPositions()  
+                if (this.firstLoad) {
+                    this.updateAllBlockPositions()  
+                } else {
+                    this.addNewBlockPositions()
+                }
             }
+        },
+        fadeInNewBlocks() {
+            const newBlocks = this.newBlocks.map(b => b)
+            newBlocks.sort((a, b) => {
+                // Eerst sorteren op y (van boven naar beneden)
+                if (a.position.y !== b.position.y) {
+                    return a.position.y - b.position.y;
+                }
+                // Als y gelijk is, sorteren op x (van links naar rechts)
+                return a.position.x - b.position.x;
+            });
+
+            newBlocks.forEach((newBlock, index) => {
+                // Fade in all the newly added blocks
+                if (newBlock.el) {
+                    gsap.to(newBlock.el, { 
+                            opacity: 1,
+                            duration: .24,
+                            delay: .1 + index * .1,
+                            ease: "sine.out",
+                        }
+                    )
+                }
+            })
+            
         },
         updateLayoutHeight() {
             if (!this.$el) {

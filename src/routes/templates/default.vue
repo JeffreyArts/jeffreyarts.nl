@@ -18,7 +18,6 @@
 <script lang="ts">
 import { defineComponent } from "vue"
 import gsap from "gsap"
-import Packer from "@/model/packer"
 import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 
 import payloadStore from "@/stores/payload"
@@ -90,9 +89,10 @@ export default defineComponent ({
             layoutSize: 8,
             is404: false,
             pageLoaded: false,
+            pageFadedOut: false,
             pageSwitchIndex: 0,
             pageBlocks: [] as Array<BlockType>,
-            tempPageBlocks: [] as Array<BlockType>,
+            // tempPageBlocks: [] as Array<BlockType>,
             abortController: null as AbortController | null,
             pageIsLoading: null as NodeJS.Timeout | null
         }
@@ -102,36 +102,19 @@ export default defineComponent ({
             async handler() {
                 this.pageLoaded = false
                 this.is404 = false
+                
+                const blokElements = Array.from(document.querySelectorAll("#default-layout .block")) //.sort((a, b) => (a as HTMLElement).offsetTop - (b as HTMLElement).offsetTop);
+                console.log("blokElements", blokElements.length)
+                if (blokElements.length > 0) {
+                    this.fadeOutPage()
+                } 
 
                 await this.loadPage()
 
-                const blokElements = Array.from(document.querySelectorAll("#default-layout .block"))
-                    .sort((a, b) => (a as HTMLElement).offsetTop - (b as HTMLElement).offsetTop);
-                if (blokElements.length > 0) {
-                    for (let index = 0; index < blokElements.length; index++) {
-                        const element = blokElements[index] as HTMLElement;
-                        const viewportHeight = window.innerHeight;
-                        let onCompleteAdded = false
-
-                        gsap.to(element, {
-                            opacity: 0,
-                            duration: .24,
-                            delay: index * .1,
-                            ease: "sine.out",
-                            onComplete: () => {
-                                if ((element.offsetTop > viewportHeight || index === blokElements.length - 1)  && !onCompleteAdded) {
-                                    setTimeout(() => {
-                                        this.pageLoaded = true
-                                        onCompleteAdded = true
-                                    }, 240)
-                                }
-                            }
-                        })
-                    }
-                } else {
+                if (blokElements.length == 0) {
                     this.pageLoaded = true
-                }
-
+                } 
+                    
                 // Scroll to top
                 gsap.to(window, {
                     scrollTo: { y: 0 }, // Scroll to the top of the page
@@ -163,37 +146,84 @@ export default defineComponent ({
     methods: {
         loaded() {
             this.$nextTick(() => {
-                const blokElements = document.querySelectorAll("#default-layout .block")
-                setTimeout(() => {
-                    if (blokElements.length > 0) {
-                        for (let index = 0; index < blokElements.length; index++) {
-                            const element = blokElements[index];
-
-                            gsap.fromTo(element, { opacity: 0 },{
-                                opacity: 1,
-                                duration: .24,
-                                delay: .1 + index * .1,
-                                ease: "sine.out",
-                                onComplete: () => {
-                                    // Check if a #filter-layout exists in the current url, using this.$route.hash
-                                    if (this.$route.hash === "#filter-layout") {
-                                        const filterLayout = document.getElementById("filter-layout")
-                                        if (filterLayout) {
-                                            filterLayout.scrollIntoView({ behavior: "smooth" })
-                                        }
-                                    }
-                                }
-                            })
-                        }
+                if (this.$route.hash === "#filter-layout") {
+                    const filterLayout = document.getElementById("filter-layout")
+                    if (filterLayout) {
+                        filterLayout.scrollIntoView({ behavior: "smooth" })
                     }
-                }, blokElements.length * 1)
+                }
+                // const blokElements = document.querySelectorAll("#default-layout .block")
+                // setTimeout(() => {
+                //     if (blokElements.length > 0) {
+                //         for (let index = 0; index < blokElements.length; index++) {
+                //             const element = blokElements[index];
+
+                //             gsap.fromTo(element, { opacity: 0 },{
+                //                 opacity: 1,
+                //                 duration: .24,
+                //                 delay: .1 + index * .1,
+                //                 ease: "sine.out",
+                //                 onComplete: () => {
+                //                     // Check if a #filter-layout exists in the current url, using this.$route.hash
+                //                     if (this.$route.hash === "#filter-layout") {
+                //                         const filterLayout = document.getElementById("filter-layout")
+                //                         if (filterLayout) {
+                //                             filterLayout.scrollIntoView({ behavior: "smooth" })
+                //                         }
+                //                     }
+                //                 }
+                //             })
+                //         }
+                //     }
+                // }, blokElements.length * 1)
+            })
+        },
+        fadeOutPage() {
+            const blokElements = Array.from(document.querySelectorAll("#default-layout .block")).sort((a, b) => (a as HTMLElement).offsetTop - (b as HTMLElement).offsetTop);
+            // for (let index = 0; index < blokElements.length; index++) {
+            //     const element = blokElements[index] as HTMLElement;
+            //     let onCompleteAdded = false
+            // }
+            
+            
+            const viewportHeight = window.innerHeight;
+            let delayTimeout = undefined as undefined | NodeJS.Timeout
+            if (blokElements.length <= 0) {
+                this.pageLoaded = true
+            }
+
+            console.log("PageFadeOut", blokElements)
+            blokElements.forEach((el, index) => {
+                const element = el as HTMLElement
+                if ((element.offsetTop > viewportHeight || index === blokElements.length - 1)  && !delayTimeout) {
+                    delayTimeout = setTimeout(() => {
+                        this.pageFadedOut = true
+                        
+                        if (this.$refs["default-layout"]) {
+                            const defaultLayout = this.$refs["default-layout"] as InstanceType<typeof Layout>
+                            defaultLayout.blocks = []
+                            defaultLayout.newBlocks = []
+                        }
+                        console.log("Page faded out", this.Payload.page)
+                        if (this.Payload.page) {
+                            this.pageBlocks = this.Payload.page.data.blocks
+                        }
+                    }, index * 250)
+                }
+            })
+            
+            gsap.to("#default-layout .block", {
+                opacity: 0,
+                duration: .24,
+                stagger: 0.1,
+                ease: "sine.out"
             })
         },
         cancelPageLoad() {
             if (this.pageIsLoading) {
                 clearTimeout(this.pageIsLoading)
             }
-            this.tempPageBlocks = []
+            // this.tempPageBlocks = []
             this.pageBlocks = []
             if (this.Payload.page) {
                 this.Payload.page.data.blocks = []
@@ -202,7 +232,7 @@ export default defineComponent ({
             // Clear Layout blocks cache
             if (this.$refs["default-layout"]) {
                 const defaultLayout = this.$refs["default-layout"] as InstanceType<typeof Layout>
-                defaultLayout.newBlocks = []
+                // defaultLayout.blocks = []
             }
         },
         async loadPage() {
@@ -216,8 +246,9 @@ export default defineComponent ({
                     this.is404 = true
                     return
                 }
-                this.tempPageBlocks = res.blocks
+                // this.tempPageBlocks = res.blocks
                 this.updateLayoutSize()
+                console.log("PAGE LOAD ACTIVATED")
                 this.updatePageBlocks(this.pageSwitchIndex)
             } catch (error) {
                 console.error("Error loading page:", error)
@@ -238,17 +269,26 @@ export default defineComponent ({
             }
 
             if (this.Payload.page) {
+                console.log("🫠 New Page is loaded")
                 // Add new content
                 this.updateLayoutSize()
-
+                let activeBlocks = false
                 if (this.$refs["default-layout"]) {
                     const defaultLayout = this.$refs["default-layout"] as InstanceType<typeof Layout>
+                    if (defaultLayout.blocks.length > 0) {
+                        activeBlocks = true
+                    }
+                    defaultLayout.newBlocks = []
                     defaultLayout.blocks = []
-                    defaultLayout.packerLayout = new Packer(defaultLayout.layoutWidth, 0, { autoResize: "height" })
                 }
-
-                this.pageBlocks = this.Payload.page.data.blocks
-                this.tempPageBlocks = []
+                
+                
+                // Check so that the blocks won't be reset if a fading out is still occuring
+                // This also means that the fadeOut method should set pageBlocks
+                if (!activeBlocks) {
+                    this.pageBlocks = this.Payload.page.data.blocks
+                    // this.tempPageBlocks = []
+                }
             }
         },
         updateLayoutSize() {
