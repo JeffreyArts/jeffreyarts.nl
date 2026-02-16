@@ -125,7 +125,8 @@ export default defineComponent ({
     methods: {
         __onResizeEvent() { 
             clearTimeout(this.timeoutDelay)
-            this.timeoutDelay = setTimeout(this.updateAllBlockPositions, 80)
+            gsap.set(this.$el.querySelectorAll(".block"), {opacity: 0})
+            this.timeoutDelay = setTimeout(this.updateAllBlockPositions, 100)
         },
         // __findBlock(blockId: string | number, targetBlocks: BlockType[]) {
         //     if (!blockId)  throw new Error("Missing id in posBlock")
@@ -257,6 +258,7 @@ export default defineComponent ({
             if (!position) {
                 return
             }
+            
             if (isNaN(position[type])) {
                 if (type === "width") {
                     return "100%"
@@ -286,7 +288,7 @@ export default defineComponent ({
         addBlockToPacker(id: string, onlyWidth = false) {
             const newBlock = this.newBlocks.find(b => b.block.id == id)
             const blockEl = this.$el.querySelector(`#block-${id}`) as HTMLElement
-            this.updateLayoutWidth()
+            
             if (!newBlock) {
                 console.error(`Can not find newBlock with id ${id}`)
                 return 
@@ -297,7 +299,7 @@ export default defineComponent ({
             }
 
             if (blockEl) {
-                newBlock.el = blockEl
+                // newBlock.el = blockEl
 
                 const size = newBlock.block.size > this.options.layoutSize ? this.options.layoutSize : newBlock.block.size
                 const ratio = blockEl.clientWidth  / blockEl.clientHeight
@@ -339,14 +341,20 @@ export default defineComponent ({
                 if (b.position?.position === undefined) return -1;
                 return a.position.position - b.position.position;
             });
-            
+
             // Set all the correct widths
             this.newBlocks.forEach(newBlock => {
                 this.addBlockToPacker(newBlock.block.id, ONLY_WIDTH)
             })
             dispatchEvent(new CustomEvent('layoutChange'))   
-            
-            
+
+            const complicatedBlockTypes = ["ascii", "line", "banner", "pieceThumbnail", "note" ]
+            let delay = 1000
+            const hasComplicatedBlock = this.newBlocks.some( b => complicatedBlockTypes.includes(b.block.data.blockType) );
+            if (!hasComplicatedBlock) {
+                delay = 0
+            }
+
             // Set all the correct heights after 1 second, to give some time to any block that needs to update because the width has changed
             setTimeout(() => {
                 this.packerLayout = new Packer(this.layoutWidth, 0, { autoResize: "height" })
@@ -360,12 +368,18 @@ export default defineComponent ({
             
                 this.fadeInNewBlocks()
 
-
                 // Communicate that the layout has been loaded
                 this.loaded = true
                 this.$emit("loaded", this.loaded)
                 dispatchEvent(new CustomEvent('layoutLoaded', { detail: this.options }))   
-            }, 1000)
+            }, delay)
+
+            gsap.to(".layout-loader", {
+                opacity: 0,
+                duration: delay ? .5 : 0,
+                delay: delay ? .5 : 0,
+                ease: "sine.out",
+            })
         },
         async addNewBlockPositions() {
             if (!this.$el) {
@@ -408,7 +422,7 @@ export default defineComponent ({
                 return
             }   
             block.loaded = true
-            
+            this.updateLayoutWidth()
             // Get index of block in this.blocks
             const index = this.blocks.findIndex(b => b.id === block.id)
             
@@ -434,6 +448,13 @@ export default defineComponent ({
             // if all blocks are loaded, set their dimensions and positions
             if (this.blocks.every(block => block.loaded)) {
                 if (this.firstLoad) {
+                    // Update the connected domElements with the newBlocks, now they are all loaded
+                    this.newBlocks.forEach(b => {
+                        const blockEl = this.$el.querySelector(`#block-${b.block.id}`) as HTMLElement
+                        b.position.width = b.block.size * this.layoutSizeRatio,
+                        b.el = blockEl
+                    })
+
                     this.updateAllBlockPositions()  
                 } else {
                     this.addNewBlockPositions()
@@ -451,8 +472,6 @@ export default defineComponent ({
                 return a.position.x - b.position.x;
             });
 
-            let delayMultiplier = 1
-
             let cumulativeDelay = 0;
             newBlocks.forEach((newBlock, index) => {
                 if (newBlock.el) {
@@ -465,12 +484,14 @@ export default defineComponent ({
                         delay: cumulativeDelay,
                         ease: "sine.out",
                     });
-                    console.log(cumulativeDelay);
                 }
             });
             
         },
         updateLayoutWidth() {
+            if(!this.$el){
+                return
+            }
             this.layoutWidth = this.$el.clientWidth
             this.layoutSizeRatio = (this.layoutWidth) / this.options.layoutSize
         },

@@ -253,8 +253,6 @@ export default defineComponent ({
                 return
             }
 
-            console.log("this.fadeOutTimeout", this.fadeOutTimeout)
-            console.log("this.Payload.page", this.Payload.page)
             // Cancel the fadeout and reset the blocks && newBlocks of the default-layout 
             // if (this.fadeOutTimeout) {
             //     clearTimeout(this.fadeOutTimeout)
@@ -278,7 +276,7 @@ export default defineComponent ({
 
             if (this.Payload.page) {
                 this.updateLayoutSize()
-                console.log("🗑️ REMOVE OLD CONTENT")
+                
                 // Remove old content
                 if (this.$refs["default-layout"]) {
                     const defaultLayout = this.$refs["default-layout"] as InstanceType<typeof Layout>
@@ -291,7 +289,6 @@ export default defineComponent ({
                     this.pageData = this.Payload.page.data
                 }
                 this.updateLayoutSize()
-                // console.log("UPDATE PAGE BLOCKS")
             }
         },
         updateLayoutSize() {
