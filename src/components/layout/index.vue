@@ -11,9 +11,9 @@
             :layout-gap="options.layoutGap">
             
             <!-- <div class="layout-loader"> -->
-            <div class="layout-loader" v-if="!loaded">
+            <div class="layout-loader" v-if="!loaded || processing">
                 <h6>Loading...</h6>
-                <span>
+                <span v-if="!processing">
                     {{newBlocks.length }} / {{ blocks.length }}
                 </span>
             </div>
@@ -67,8 +67,7 @@ export default defineComponent ({
     data() {
         return {
             timeoutDelay: undefined as undefined | NodeJS.Timeout,
-            gap: 40,
-            animations: [] as gsap.core.Tween[],
+            updateAllBlocksTimeout: undefined as undefined | NodeJS.Timeout,
             layoutWidth: 0 as number,
             layoutSizeRatio: 0 as number,
             packerLayout: undefined as Packer | undefined,
@@ -83,12 +82,16 @@ export default defineComponent ({
     computed: {
     },
     watch:{
-        // "$route.path": {
-        //     handler() {
-        //         this.firstLoad = true
-        //     },
-        //     immediate: false
-        // },
+        "$route.path": {
+            handler() {
+                this.loaded = false
+                if (this.updateAllBlocksTimeout) {
+                    clearTimeout(this.updateAllBlocksTimeout)
+                    gsap.set(this.$el.querySelectorAll(".layout-loader"), {opacity: 1})
+                }
+            },
+            immediate: false
+        },
         "options.layoutSize": {
             async handler() {
                 // this.updateAllBlockPositions()
@@ -101,12 +104,6 @@ export default defineComponent ({
                     return
                 }
                 this.loaded = false
-                
-                if (this.animations) {
-                    this.animations.forEach(tween => {
-                        gsap.killTweensOf(tween)
-                    })
-                }
 
                 this.addBlocks(this.options.blocks)
             },
@@ -356,7 +353,8 @@ export default defineComponent ({
             }
 
             // Set all the correct heights after 1 second, to give some time to any block that needs to update because the width has changed
-            setTimeout(() => {
+            this.updateAllBlocksTimeout = setTimeout(() => {
+                this.updateAllBlocksTimeout = undefined
                 this.packerLayout = new Packer(this.layoutWidth, 0, { autoResize: "height" })
                 
                 this.newBlocks.forEach(newBlock => {

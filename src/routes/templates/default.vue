@@ -226,6 +226,11 @@ export default defineComponent ({
         async loadPage() {
             try {
                 this.pageSwitchIndex++
+
+                if (this.$refs["default-layout"]) {
+                    const defaultLayout = this.$refs["default-layout"] as InstanceType<typeof Layout>
+                    defaultLayout.processing = true
+                }
                 // this.cancelPageLoad()
                 const res = await this.Payload.getPageByPath(this.$route.path)
                 
@@ -284,6 +289,7 @@ export default defineComponent ({
                     const defaultLayout = this.$refs["default-layout"] as InstanceType<typeof Layout>
                     defaultLayout.newBlocks = []
                     defaultLayout.blocks = []
+                    defaultLayout.processing = false
                 }
                 
                 // Add new content
