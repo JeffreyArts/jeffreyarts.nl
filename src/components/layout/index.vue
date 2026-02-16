@@ -421,9 +421,7 @@ export default defineComponent ({
             }   
             block.loaded = true
             this.updateLayoutWidth()
-            // Get index of block in this.blocks
-            const index = this.blocks.findIndex(b => b.id === block.id)
-            
+                        
             // Add the loaded block to the newBlocks array
             this.newBlocks.push({
                 el: undefined,
@@ -439,7 +437,7 @@ export default defineComponent ({
                     y: 0,
                     width: block.size * this.layoutSizeRatio,
                     height: NaN,
-                    position: index
+                    position: block.position
                 }
             })
             
