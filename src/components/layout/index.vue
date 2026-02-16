@@ -70,7 +70,7 @@ export default defineComponent ({
             gap: 40,
             animations: [] as gsap.core.Tween[],
             layoutWidth: 0 as number,
-            widthRatio: 0 as number,
+            layoutSizeRatio: 0 as number,
             packerLayout: undefined as Packer | undefined,
             firstLoad: true,
             loaded: false,
@@ -118,8 +118,6 @@ export default defineComponent ({
         if (typeof window !== "undefined") {
             window.addEventListener("resize", this.__onResizeEvent)
         }
-        
-        this.newBlocks = []
     },
     unmounted() {
         window.removeEventListener("resize", this.__onResizeEvent)
@@ -171,7 +169,7 @@ export default defineComponent ({
         //             block.height = b.el.clientHeight
         //         }
         //         const ratio = block.width / block.height
-        //         b.width = block.size * this.widthRatio
+        //         b.width = block.size * this.layoutSizeRatio
         //         b.height = b.width / ratio
         //         console.log("Block", block)
         //     })
@@ -186,7 +184,7 @@ export default defineComponent ({
                     
         //     //         // block.size = block.size > this.options.layoutSize ? this.options.layoutSize : block.size
         //     //         const ratio = b.width / b.height
-        //     //         b.width = block.size * this.widthRatio
+        //     //         b.width = block.size * this.layoutSizeRatio
         //     //         b.height = b.width / ratio
                     
                     
@@ -288,7 +286,7 @@ export default defineComponent ({
         addBlockToPacker(id: string, onlyWidth = false) {
             const newBlock = this.newBlocks.find(b => b.block.id == id)
             const blockEl = this.$el.querySelector(`#block-${id}`) as HTMLElement
-            
+            this.updateLayoutWidth()
             if (!newBlock) {
                 console.error(`Can not find newBlock with id ${id}`)
                 return 
@@ -303,7 +301,7 @@ export default defineComponent ({
 
                 const size = newBlock.block.size > this.options.layoutSize ? this.options.layoutSize : newBlock.block.size
                 const ratio = blockEl.clientWidth  / blockEl.clientHeight
-                const width = size * this.widthRatio
+                const width = size * this.layoutSizeRatio
                 const height = width / ratio
                 
                 newBlock.packerBlock.width = Math.floor(width)
@@ -319,11 +317,6 @@ export default defineComponent ({
                 } else {
                     newBlock.position = position
                 }
-
-                if (!onlyWidth) {
-                    // console.log(`paperBlock[${newBlock.block.id}]`,"OriginalWidth",blockEl.clientWidth, "OriginalHeight", blockEl.clientHeight, "width:", newBlock.packerBlock.width, "height", newBlock.packerBlock.height,"posWidth",newBlock.position.width, "posHeight", newBlock.position.height, "posX",newBlock.position.x, "posY", newBlock.position.y)
-                }
-                // console.log("newBlock.position", this.widthRatio, this.layoutWidth,)
             } else {
                 console.error("Missing block element for block id:", newBlock.block.id)
             }
@@ -336,15 +329,15 @@ export default defineComponent ({
 
             // Set helper variables
             this.layoutWidth = this.$el.clientWidth
-            this.widthRatio = (this.layoutWidth) / this.options.layoutSize
+            this.layoutSizeRatio = (this.layoutWidth) / this.options.layoutSize
 
             this.packerLayout = new Packer(this.layoutWidth, 0, { autoResize: "height" })
 
             // Sort by position
-            this.newBlocks = this.newBlocks.sort((a, b) => { 
-                if (typeof a.position?.position === "number" && typeof b.position?.position === "number") {
-                    return a.position.position - b.position.position
-                }
+            this.newBlocks.sort((a, b) => { 
+                if (a.position?.position === undefined) return 1;
+                if (b.position?.position === undefined) return -1;
+                return a.position.position - b.position.position;
             });
             
             // Set all the correct widths
@@ -361,6 +354,7 @@ export default defineComponent ({
                 this.newBlocks.forEach(newBlock => {
                     this.addBlockToPacker(newBlock.block.id)
                 })
+
                 dispatchEvent(new CustomEvent('layoutChange'))   
                 this.updateLayoutHeight()
             
@@ -381,14 +375,14 @@ export default defineComponent ({
 
             // Set helper variables
             this.layoutWidth = this.$el.clientWidth
-            this.widthRatio = (this.layoutWidth) / this.options.layoutSize
+            this.layoutSizeRatio = (this.layoutWidth) / this.options.layoutSize
             // Sort by position
-            this.newBlocks = this.newBlocks.sort((a, b) => { 
-                if (typeof a.position?.position === "number" && typeof b.position?.position === "number") {
-                    return a.position.position - b.position.position
-                }
+            this.newBlocks.sort((a, b) => { 
+                if (a.position?.position === undefined) return 1;
+                if (b.position?.position === undefined) return -1;
+                
+                return a.position.position - b.position.position
             });
-            console.log("this.newBlocks", this.newBlocks)
             
 
             // Set all the correct widths
@@ -431,7 +425,7 @@ export default defineComponent ({
                 position: {
                     x: 0,
                     y: 0,
-                    width: block.size * this.widthRatio,
+                    width: block.size * this.layoutSizeRatio,
                     height: NaN,
                     position: index
                 }
@@ -457,19 +451,28 @@ export default defineComponent ({
                 return a.position.x - b.position.x;
             });
 
+            let delayMultiplier = 1
+
+            let cumulativeDelay = 0;
             newBlocks.forEach((newBlock, index) => {
-                // Fade in all the newly added blocks
                 if (newBlock.el) {
-                    gsap.to(newBlock.el, { 
-                            opacity: 1,
-                            duration: .24,
-                            delay: .1 + index * .1,
-                            ease: "sine.out",
-                        }
-                    )
+                    // Stapgrootte wordt steeds kleiner, maar delay neemt altijd toe
+                    const step = Math.max(0.2 - (index * 0.02), 0.01);
+                    cumulativeDelay += step;
+                    gsap.to(newBlock.el, {
+                        opacity: 1,
+                        duration: 0.24,
+                        delay: cumulativeDelay,
+                        ease: "sine.out",
+                    });
+                    console.log(cumulativeDelay);
                 }
-            })
+            });
             
+        },
+        updateLayoutWidth() {
+            this.layoutWidth = this.$el.clientWidth
+            this.layoutSizeRatio = (this.layoutWidth) / this.options.layoutSize
         },
         updateLayoutHeight() {
             if (!this.$el) {
@@ -479,13 +482,12 @@ export default defineComponent ({
 
             // Set these mandatory variables, required for other parts of the component
             // this.layoutWidth = this.$el.clientWidth
-            // this.widthRatio = (this.layoutWidth) / this.options.layoutSize
+            // this.layoutSizeRatio = (this.layoutWidth) / this.options.layoutSize
         
             const layout = this.$el.querySelector(".layout")
 
             if (!layout) { return }
             if (this.newBlocks.length != this.blocks.length) { return }
-
             // Get last block
             let lastBlock = this.newBlocks[0]
             this.newBlocks.forEach(newBlock => {

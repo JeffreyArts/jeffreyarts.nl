@@ -228,7 +228,10 @@ export default defineComponent ({
         scaleText(): void {
             const container = this.$refs.container as HTMLElement
             const content = this.$refs.content as HTMLElement
-
+            if (!content) {
+                return
+            }
+            
             const rects = content.getBoundingClientRect()
             this.height = rects.height
             content.style.fontSize = `${this.fontSize}px`

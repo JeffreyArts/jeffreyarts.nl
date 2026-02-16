@@ -2,13 +2,13 @@
     <section class="default-template" v-if="!is404">
         <Breadcrumbs />
 
-        <Layout v-if="Payload?.page?.data?.layout" id="default-layout" ref="default-layout" :options="{
+        <Layout v-if="pageData?.layout" id="default-layout" ref="default-layout" :options="{
             layoutGap: 40,
-            id: Payload.page?.data.id,
+            id: pageData.id,
             layoutSize: layoutSize,
-            blocks: pageBlocks
+            blocks: pageData.blocks
         }" @loaded="loaded"/>
-        <FilterComponent v-if="Payload.page?.data?.filter?.name && showFilters" :options="Payload.page?.data?.filter" :pageDetails="Payload.page.data" ref="filter" @filterUpdated="updateFilter"/>
+        <FilterComponent v-if="pageData?.filter?.name && showFilters" :options="pageData?.filter" :pageDetails="pageData" ref="filter" @filterUpdated="updateFilter"/>
     </section>
 
     <page404 v-if="is404"/>
@@ -19,6 +19,7 @@
 import { defineComponent } from "vue"
 import gsap from "gsap"
 import { ScrollToPlugin } from "gsap/ScrollToPlugin";
+import {PageType} from "@/model/payload/page"
 
 import payloadStore from "@/stores/payload"
 import { useHead }  from "@unhead/vue"
@@ -76,8 +77,8 @@ export default defineComponent ({
     },
     computed: {
         showFilters() {
-            if (this.Payload?.page?.data?.filter && typeof this.Payload.page.data.displayFilters === "boolean") {
-                return this.Payload.page.data.displayFilters
+            if (this.pageData?.filter && typeof this.pageData.displayFilters === "boolean") {
+                return this.pageData.displayFilters
             } else {
                 return true
             }
@@ -89,12 +90,13 @@ export default defineComponent ({
             layoutSize: 8,
             is404: false,
             pageLoaded: false,
-            pageFadedOut: false,
             pageSwitchIndex: 0,
-            pageBlocks: [] as Array<BlockType>,
+            // pageBlocks: [] as Array<BlockType>,
             // tempPageBlocks: [] as Array<BlockType>,
             abortController: null as AbortController | null,
-            pageIsLoading: null as NodeJS.Timeout | null
+            fadeOutTimeout: undefined as undefined | NodeJS.Timeout,
+            pageIsLoading: null as NodeJS.Timeout | null,
+            pageData: undefined as PageType | undefined
         }
     },
     watch: {
@@ -104,16 +106,15 @@ export default defineComponent ({
                 this.is404 = false
                 
                 const blokElements = Array.from(document.querySelectorAll("#default-layout .block")) //.sort((a, b) => (a as HTMLElement).offsetTop - (b as HTMLElement).offsetTop);
-                console.log("blokElements", blokElements.length)
                 if (blokElements.length > 0) {
                     this.fadeOutPage()
                 } 
 
-                await this.loadPage()
+                this.pageLoaded = await this.loadPage()
 
-                if (blokElements.length == 0) {
-                    this.pageLoaded = true
-                } 
+                // if (blokElements.length == 0) {
+                //     true
+                // } 
                     
                 // Scroll to top
                 gsap.to(window, {
@@ -187,28 +188,13 @@ export default defineComponent ({
             
             
             const viewportHeight = window.innerHeight;
-            let delayTimeout = undefined as undefined | NodeJS.Timeout
-            if (blokElements.length <= 0) {
-                this.pageLoaded = true
-            }
-
-            console.log("PageFadeOut", blokElements)
+    
             blokElements.forEach((el, index) => {
                 const element = el as HTMLElement
-                if ((element.offsetTop > viewportHeight || index === blokElements.length - 1)  && !delayTimeout) {
-                    delayTimeout = setTimeout(() => {
-                        this.pageFadedOut = true
-                        
-                        if (this.$refs["default-layout"]) {
-                            const defaultLayout = this.$refs["default-layout"] as InstanceType<typeof Layout>
-                            defaultLayout.blocks = []
-                            defaultLayout.newBlocks = []
-                        }
-                        console.log("Page faded out", this.Payload.page)
-                        if (this.Payload.page) {
-                            this.pageBlocks = this.Payload.page.data.blocks
-                        }
-                    }, index * 250)
+                if ((element.offsetTop > viewportHeight || index === blokElements.length - 1)  && !this.fadeOutTimeout) {
+                    this.fadeOutTimeout = setTimeout(() => {
+                        this.fadeOutTimeout = undefined
+                    }, Math.min(index * 250, 1000)) // Limit timeout to 1 second
                 }
             })
             
@@ -219,48 +205,47 @@ export default defineComponent ({
                 ease: "sine.out"
             })
         },
-        cancelPageLoad() {
-            if (this.pageIsLoading) {
-                clearTimeout(this.pageIsLoading)
-            }
-            // this.tempPageBlocks = []
-            this.pageBlocks = []
-            if (this.Payload.page) {
-                this.Payload.page.data.blocks = []
-            }
-            
-            // Clear Layout blocks cache
-            if (this.$refs["default-layout"]) {
-                const defaultLayout = this.$refs["default-layout"] as InstanceType<typeof Layout>
-                // defaultLayout.blocks = []
-            }
-        },
+        // cancelPageLoad() {
+        //     if (this.pageIsLoading) {
+        //         clearTimeout(this.pageIsLoading)
+        //     }
+        //     // this.tempPageBlocks = []
+        //     this.pageBlocks = []
+        //     if (this.Payload.page) {
+        //         this.Payload.page.data.blocks = []
+        //     }
+
+        //     // Clear Layout blocks cache
+        //     if (this.$refs["default-layout"]) {
+        //         const defaultLayout = this.$refs["default-layout"] as InstanceType<typeof Layout>
+        //         // defaultLayout.blocks = []
+        //     }
+        // },
         async loadPage() {
             try {
                 this.pageSwitchIndex++
-                this.cancelPageLoad()
+                // this.cancelPageLoad()
                 const res = await this.Payload.getPageByPath(this.$route.path)
                 
                 // this.Payload.page?.data = res as PageType
                 if (!res) {
                     this.is404 = true
-                    return
+                    return true
                 }
                 // this.tempPageBlocks = res.blocks
-                this.updateLayoutSize()
-                console.log("PAGE LOAD ACTIVATED")
                 this.updatePageBlocks(this.pageSwitchIndex)
             } catch (error) {
                 console.error("Error loading page:", error)
                 this.is404 = true
             }
+            return true
         },
         updatePageBlocks(index: number) {
             if (index !== this.pageSwitchIndex) {
                 return
             }
 
-            if (!this.pageLoaded) {
+            if (!this.pageLoaded || this.fadeOutTimeout || !this.Payload.page?.data) {
                 // Repeat this function until pageLoaded is true
                 this.pageIsLoading = setTimeout(() => {
                     this.updatePageBlocks(index)
@@ -268,31 +253,49 @@ export default defineComponent ({
                 return
             }
 
+            console.log("this.fadeOutTimeout", this.fadeOutTimeout)
+            console.log("this.Payload.page", this.Payload.page)
+            // Cancel the fadeout and reset the blocks && newBlocks of the default-layout 
+            // if (this.fadeOutTimeout) {
+            //     clearTimeout(this.fadeOutTimeout)
+            //     this.pageFadedOut = true
+                        
+            //     if (this.$refs["default-layout"]) {
+            //         const defaultLayout = this.$refs["default-layout"] as InstanceType<typeof Layout>
+            //         defaultLayout.blocks = []
+            //         defaultLayout.newBlocks = []
+            //     }
+            // }
+                        // if (this.$refs["default-layout"]) {
+                        //     const defaultLayout = this.$refs["default-layout"] as InstanceType<typeof Layout>
+                        //     defaultLayout.blocks = []
+                        //     defaultLayout.newBlocks = []
+                        // }
+                        // console.log("Page faded out", this.Payload.page)
+                        // if (this.Payload.page?.data) {
+                        //     this.pageBlocks = this.Payload.page.data.blocks
+                        // }
+
             if (this.Payload.page) {
-                console.log("🫠 New Page is loaded")
-                // Add new content
                 this.updateLayoutSize()
-                let activeBlocks = false
+                console.log("🗑️ REMOVE OLD CONTENT")
+                // Remove old content
                 if (this.$refs["default-layout"]) {
                     const defaultLayout = this.$refs["default-layout"] as InstanceType<typeof Layout>
-                    if (defaultLayout.blocks.length > 0) {
-                        activeBlocks = true
-                    }
                     defaultLayout.newBlocks = []
                     defaultLayout.blocks = []
                 }
                 
-                
-                // Check so that the blocks won't be reset if a fading out is still occuring
-                // This also means that the fadeOut method should set pageBlocks
-                if (!activeBlocks) {
-                    this.pageBlocks = this.Payload.page.data.blocks
-                    // this.tempPageBlocks = []
+                // Add new content
+                if (this.Payload.page.data) {
+                    this.pageData = this.Payload.page.data
                 }
+                this.updateLayoutSize()
+                // console.log("UPDATE PAGE BLOCKS")
             }
         },
         updateLayoutSize() {
-            if (!this.Payload.page?.data.layout) {
+            if (!this.pageData?.layout) {
                 return
             }
             // Match these with Payload::pages.fields.layout for best DX
@@ -314,7 +317,7 @@ export default defineComponent ({
             }
             this.breakpoint = breakPoint
             const size = `size_${this.breakpoint}` as "size_xs" | "size_s" | "size_m" | "size_l" | "size_xl" 
-            this.layoutSize = this.Payload.page?.data.layout[size]
+            this.layoutSize = this.pageData.layout[size]
         },
         updateFilter() {
             // Doe dingen ?
