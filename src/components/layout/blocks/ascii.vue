@@ -3,8 +3,7 @@
         <pre class="ascii-block-content" ref="content">{{ ascii }}</pre>
         <div class="slider" ref="slider" :class="{'__isActive': slider.isActive}"
             v-if="options.allowResizing"
-            @mousedown="startSlider"
-            @touchstart="startSlider">
+            @pointerdown="startSlider">
             <div class="knob"></div>
         </div>
     </div>
@@ -127,7 +126,7 @@ export default defineComponent ({
 
         window.addEventListener("resize", this.scaleText)
         window.addEventListener("layoutChange", this.setDefaultFontSize) 
-        // window.addEventListener("layoutLoaded", this.setDefaultFontSize) 
+        window.addEventListener("layoutLoaded", this.setDefaultFontSize) 
     },
     unmounted() {
         window.removeEventListener("resize", this.scaleText)
@@ -268,20 +267,14 @@ export default defineComponent ({
             const rects = slider.getBoundingClientRect()
             const xValue = clientX - rects.x
             
+            
             // Set slider value based on click position
-            if (xValue >= 0 && xValue <= rects.width) {
-                this.setSliderValue(xValue)
-            }
+            this.setSliderValue(xValue)
             
             // Start drag functionality
             this.slider.isActive = true
-            if (event instanceof MouseEvent) {
-                window.addEventListener("mousemove", this.moveSlider)
-                window.addEventListener("mouseup", this.endSlider)
-            } else if (event instanceof TouchEvent) {
-                window.addEventListener("touchmove", this.moveSlider)
-                window.addEventListener("touchend", this.endSlider)
-            }
+            window.addEventListener("pointerup", this.endSlider)
+            window.addEventListener("pointermove", this.moveSlider)
         },
         calculateSliderValue(xValue: number) {
             const slider = this.$refs.slider as HTMLElement
@@ -289,11 +282,13 @@ export default defineComponent ({
             return Math.round((xValue / rects.width) * (this.slider.max - this.slider.min) + this.slider.min)
         },
         async setSliderValue(xValue: number) {
-            this.updateKnobPosition()
-
+            // Do not re-load the image if the slider value has not changed
             if (this.calculateSliderValue(xValue) == this.slider.value ) {
                 return
             }
+
+            this.slider.value = this.calculateSliderValue(xValue)
+            this.updateKnobPosition()
 
             if (this.imageLoadTimeout) {
                 clearTimeout(this.imageLoadTimeout)
@@ -303,7 +298,6 @@ export default defineComponent ({
                 this.imageLoading = this.loadAciiImage()
             }, 100)
 
-            this.slider.value = this.calculateSliderValue(xValue)
         },
         updateKnobPosition() {
             const slider = this.$refs.slider as HTMLElement
@@ -355,10 +349,8 @@ export default defineComponent ({
             } else {
                 this.slider.isActive = false
             }
-            window.removeEventListener("mousemove", this.moveSlider)
-            window.removeEventListener("mouseup", this.endSlider)
-            window.removeEventListener("touchmove", this.moveSlider)
-            window.removeEventListener("touchend", this.endSlider)
+            window.removeEventListener("pointermove", this.moveSlider)
+            window.removeEventListener("pointerup", this.endSlider)
         }
     }
 })
