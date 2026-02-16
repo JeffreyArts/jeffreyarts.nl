@@ -191,10 +191,12 @@ export default defineComponent ({
     
             blokElements.forEach((el, index) => {
                 const element = el as HTMLElement
-                if ((element.offsetTop > viewportHeight || index === blokElements.length - 1)  && !this.fadeOutTimeout) {
+                const rect = element.getBoundingClientRect();
+                const offsetTop = rect.top;
+                if ((offsetTop > viewportHeight || index === blokElements.length - 1)  && !this.fadeOutTimeout) {
                     this.fadeOutTimeout = setTimeout(() => {
                         this.fadeOutTimeout = undefined
-                    }, Math.min(index * 250, 1000)) // Limit timeout to 1 second
+                    }, index * 250)
                 }
             })
             
