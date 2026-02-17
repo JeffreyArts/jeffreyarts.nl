@@ -226,13 +226,11 @@ export default defineComponent({
         this.setupScrollEvent()
         window.addEventListener("resize", this.onResizeEvent)
         window.addEventListener("blocksFadedIn", this.onScrollEvent)
-        window.addEventListener("layoutLoaded", this.setupScrollEvent) 
         // window.addEventListener("layoutChange", this.fadeInBlocks)
     },
     unmounted() {
         window.removeEventListener("resize", this.onResizeEvent)
         window.removeEventListener("blocksFadedIn", this.onScrollEvent)
-        window.removeEventListener("layoutLoaded", this.setupScrollEvent) 
         document.removeEventListener("scroll", this.onScrollEvent)
     },
     methods: {

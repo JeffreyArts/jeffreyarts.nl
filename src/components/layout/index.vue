@@ -263,7 +263,6 @@ export default defineComponent ({
                     this.addBlockToPacker(newBlock.block.id)
                 })
 
-                dispatchEvent(new CustomEvent('layoutChange'))   
                 this.updateLayoutHeight()
                 this.fadeInNewBlocks()
 
@@ -411,6 +410,8 @@ export default defineComponent ({
             }
         },
         fadeInNewBlocks() {
+            dispatchEvent(new CustomEvent('layoutChange'))   
+
             const newBlocks = this.newBlocks.map(b => b)
             newBlocks.sort((a, b) => {
                 // Eerst sorteren op y (van boven naar beneden)
@@ -477,8 +478,14 @@ export default defineComponent ({
             }
              
             // Set layout height to the bottom of the last block
-            layout.style.height = `${Number(lastBlock.position.height) + Number(lastBlock.position.y)}px`
-            dispatchEvent(new CustomEvent("layoutChange"))
+            gsap.to(layout, {
+                height: `${Number(lastBlock.position.height) + Number(lastBlock.position.y)}px`,
+                duration: 0.5,
+                ease: "sine.out",
+                onComplete: () => {
+                    dispatchEvent(new CustomEvent("layoutChange"))
+                }
+            })
         },
     }
 })
