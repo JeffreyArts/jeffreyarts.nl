@@ -213,7 +213,7 @@ const Filter = {
             const res = []
             if (range == "all") {
                 for (let index = 2008; index <= maxYear; index++) {
-                    res.push({
+                    res.unshift({
                         value: index,
                         label: index,
                         available: true, 
@@ -222,7 +222,7 @@ const Filter = {
                 }
             } else {
                 for (let index = range.min; index <= range.max; index++) {
-                    res.push({
+                    res.unshift({
                         value: index,
                         label: index,
                         available: true, 
