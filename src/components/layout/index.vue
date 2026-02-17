@@ -93,7 +93,6 @@ export default defineComponent ({
                 this.packerLayout = new Packer(this.layoutWidth, 0, { autoResize: "height" })
                 if (this.updateAllBlocksTimeout) {
                     clearTimeout(this.updateAllBlocksTimeout)
-                    gsap.set(this.$el.querySelectorAll(".layout-loader"), {opacity: 1})
                 }
             },
             immediate: false
@@ -359,7 +358,6 @@ export default defineComponent ({
                 })
                 
                 // A bit shady solution but it works
-                gsap.to(this.$el.parentElement.querySelector(".loading-more"), { opacity: 0, duration: 0.32 })
                 this.loaded = true
 
                 this.fadeInNewBlocks()
@@ -407,6 +405,8 @@ export default defineComponent ({
                 } else {
                     this.addNewBlockPositions()
                 }
+                    
+                this.firstLoad = false
             }
         },
         fadeInNewBlocks() {
@@ -427,7 +427,7 @@ export default defineComponent ({
             newBlocks.forEach((newBlock, index) => {
                 if (newBlock.el && newBlock.el.style.opacity !== "1") {
                     // Stapgrootte wordt steeds kleiner, maar delay neemt altijd toe
-                    const step = Math.max(0.3 - (countIndex * 0.02), 0.01);
+                    const step = Math.max(0.2 - (countIndex * 0.02), 0.01);
                     cumulativeDelay += step;
                     gsap.to(newBlock.el, {
                         opacity: 1,

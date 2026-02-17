@@ -50,9 +50,9 @@
             }"
             :class="{'__hideLoader': blocks.length > 24}"
             ref="filter-layout"/>
-        
-        <div class="loading-more" v-if="!updating && hasNextPage">
-            Loading more...
+
+        <div class="loading-more">
+            <span class="text">Loading more</span>
         </div>
     </div>
 </template>
@@ -108,10 +108,9 @@ export default defineComponent({
         return {
             blocks: [] as Array<BlockType>,
             page: 1,
-            temp: 0,
             newProjectsPerLoad: 16,
             layoutSize: 4,
-            updating: false,
+            updating: true,
             hasNextPage: false,
             nextPage: 0,
             firstLoad: false,
@@ -136,13 +135,6 @@ export default defineComponent({
                 this.updateLayoutSize()
                 this.reset()
                 this.setDefaults()
-                // Remove old content
-                // if (this.$refs["filter-layout"]) {
-                //     const filterLayout = this.$refs["filter-layout"] as InstanceType<typeof Layout>
-                //     filterLayout.newBlocks = []
-                //     filterLayout.blocks = []
-                //     filterLayout.processing = false
-                // }
                 this.updateResults()
             },
             immediate: true
@@ -234,17 +226,22 @@ export default defineComponent({
         document.removeEventListener("scroll", this.onScrollEvent)
     },
     methods: {
+        showLoadingMore() {
+            this.updating = true
+            
+            gsap.to(".loading-more", {y:0, duration: 0.32 })
+            gsap.fromTo(".loading-more .text", {opacity: .32}, { opacity: 1, duration:.64, yoyo: true, repeat: -1 })
+        },
+        hideLoadingMore() {
+            this.updating = false
+
+            gsap.to(".loading-more", {y: "100%", duration: 0.32 })
+            gsap.to(".loading-more .text", { opacity: 0, duration: 0.32 })
+        },
         onResizeEvent() {
             this.updateLayoutSize()
         },
         onScrollEvent() {
-
-            if (this.$el) { 
-                const blocks = this.$el.querySelectorAll(".block.__isFadedIn")
-                this.temp = blocks.length === this.blocks.length
-            }
-            
-
             // If the scroll position is greater than the layout height, load the next page
             if (this.bottomOfPage()) {
                 this.page = this.nextPage
@@ -384,10 +381,11 @@ export default defineComponent({
             map(this.filterOptions.year, year => { year.selected = false  })
             
             this.blocks = []
-            this.updating = false
             this.firstLoad = true
             this.nextPage = 0
             this.hasNextPage = false
+            
+            this.hideLoadingMore()
         },
         updateLayoutSize() {
             if (window.innerWidth > 1240) {
@@ -402,8 +400,8 @@ export default defineComponent({
         },
         updateSeries() {
             this.page = 1
-                this.nextPage = 0
-                this.hasNextPage = false
+            this.nextPage = 0
+            this.hasNextPage = false
 
             this.blocks.length = 0
             const querySeries = filter(this.filterOptions.series, { selected: true }).map(serie => serie.value).join(",")
@@ -462,7 +460,7 @@ export default defineComponent({
                 gsap.to(this.$el.querySelector(".loading-more"), { opacity: 1, duration: 0.32 })
             }
             
-            this.updating = true
+            this.showLoadingMore()
             
             const query = {
                 limit: this.newProjectsPerLoad,
@@ -561,7 +559,7 @@ export default defineComponent({
                 
                 this.$emit("filterUpdated")
                 this.$nextTick(() => {
-                    this.updating = false
+                    this.hideLoadingMore()
 
                     if (this.$refs["filter-layout"]) {
                         const filterLayout = this.$refs["filter-layout"] as InstanceType<typeof Layout>
@@ -571,7 +569,7 @@ export default defineComponent({
             }).catch(err => {
                 this.$emit("filterUpdated")
                 console.error(err)
-                this.updating = false
+                this.hideLoadingMore()
             })
         },
     }
@@ -708,5 +706,13 @@ export default defineComponent({
     text-align: center;
     padding: 16px;
     font-family: var(--accent-font);
+    margin-top: -40px;
+    background-color: var(--bg-color);
+    padding: 8px 16px;
+    position: fixed;
+    bottom: 0;
+    z-index: 1;
+    transform: translateY(100%);
+    box-shadow: 0 0 8px rgba(0,0,0,.08);
 }
 </style>
