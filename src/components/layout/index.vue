@@ -178,7 +178,7 @@ export default defineComponent ({
                 
 
                 if (!alreadyInPacker) {
-                    position = this.packerLayout.addBlock(newBlock.packerBlock, 12) as Position
+                    position = this.packerLayout.addBlock(newBlock.packerBlock, 16) as Position
                 } else {
                     position = {
                         width: onlyWidth ? newBlock.packerBlock.width : alreadyInPacker.width,
