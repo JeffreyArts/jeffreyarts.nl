@@ -61,18 +61,19 @@ export default defineComponent({
             if (this.$route.path.startsWith("/project")) { this.icon = "hammer"}
             if (this.$route.path.startsWith("/tool")) { this.icon = "wrench"}
             if (this.$route.path.startsWith("/about")) { this.icon = "user-outline"}
+            const pageData = this.Payload.page?.data
 
-            if (this.Payload.page?.data) {
-                if (typeof this.Payload.page.data.archived === "boolean") {
-                    if (this.Payload.page.data.archived) {
+            if (pageData) {
+                if (typeof pageData.archived === "boolean") {
+                    if (pageData.archived) {
                         this.icon = "archive"
                     } else {
                         this.icon = "hammer"
                     }
                 }
 
-                if (typeof this.Payload.page.data.project?.archived === "boolean") {
-                        if (this.Payload.page.data.project.archived) {
+                if (typeof pageData.project?.archived === "boolean") {
+                        if (pageData.project.archived) {
                         this.icon = "archive"
                     } else {
                         this.icon = "hammer"
@@ -124,17 +125,17 @@ export default defineComponent({
             this.path = arr.map((path: string, key:number) => {
                 let name = sentenceCase(path).toLowerCase()
                 name = name.charAt(0).toUpperCase() + name.slice(1)
+                const pageData = this.Payload.page?.data
 
-
-                if (this.Payload.page?.data && key == 0) {
-                    if (typeof this.Payload.page.data.archived === "boolean") {
-                        if (this.Payload.page.data.archived) {
+                if (pageData && key == 0) {
+                    if (typeof pageData.archived === "boolean") {
+                        if (pageData.archived) {
                             archived = true
                             name = "Archive"
                         }
                     }
-                    if (typeof this.Payload.page.data.project?.archived === "boolean") {
-                        if (this.Payload.page.data.project.archived) {
+                    if (typeof pageData.project?.archived === "boolean") {
+                        if (pageData.project.archived) {
                             archived = true
                             name = "Archive"
                         }

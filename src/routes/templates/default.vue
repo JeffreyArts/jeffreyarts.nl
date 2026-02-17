@@ -91,8 +91,6 @@ export default defineComponent ({
             is404: false,
             pageLoaded: false,
             pageSwitchIndex: 0,
-            // pageBlocks: [] as Array<BlockType>,
-            // tempPageBlocks: [] as Array<BlockType>,
             abortController: null as AbortController | null,
             fadeOutTimeout: undefined as undefined | NodeJS.Timeout,
             pageIsLoading: null as NodeJS.Timeout | null,
@@ -112,9 +110,6 @@ export default defineComponent ({
 
                 this.pageLoaded = await this.loadPage()
 
-                // if (blokElements.length == 0) {
-                //     true
-                // } 
                     
                 // Scroll to top
                 gsap.to(window, {
@@ -153,39 +148,10 @@ export default defineComponent ({
                         filterLayout.scrollIntoView({ behavior: "smooth" })
                     }
                 }
-                // const blokElements = document.querySelectorAll("#default-layout .block")
-                // setTimeout(() => {
-                //     if (blokElements.length > 0) {
-                //         for (let index = 0; index < blokElements.length; index++) {
-                //             const element = blokElements[index];
-
-                //             gsap.fromTo(element, { opacity: 0 },{
-                //                 opacity: 1,
-                //                 duration: .24,
-                //                 delay: .1 + index * .1,
-                //                 ease: "sine.out",
-                //                 onComplete: () => {
-                //                     // Check if a #filter-layout exists in the current url, using this.$route.hash
-                //                     if (this.$route.hash === "#filter-layout") {
-                //                         const filterLayout = document.getElementById("filter-layout")
-                //                         if (filterLayout) {
-                //                             filterLayout.scrollIntoView({ behavior: "smooth" })
-                //                         }
-                //                     }
-                //                 }
-                //             })
-                //         }
-                //     }
-                // }, blokElements.length * 1)
             })
         },
         fadeOutPage() {
             const blokElements = Array.from(document.querySelectorAll("#default-layout .block")).sort((a, b) => (a as HTMLElement).offsetTop - (b as HTMLElement).offsetTop);
-            // for (let index = 0; index < blokElements.length; index++) {
-            //     const element = blokElements[index] as HTMLElement;
-            //     let onCompleteAdded = false
-            // }
-            
             
             const viewportHeight = window.innerHeight;
     
@@ -215,15 +181,13 @@ export default defineComponent ({
                     const defaultLayout = this.$refs["default-layout"] as InstanceType<typeof Layout>
                     defaultLayout.processing = true
                 }
-                // this.cancelPageLoad()
                 const res = await this.Payload.getPageByPath(this.$route.path)
                 
-                // this.Payload.page?.data = res as PageType
                 if (!res) {
                     this.is404 = true
                     return true
                 }
-                // this.tempPageBlocks = res.blocks
+
                 this.updatePageBlocks(this.pageSwitchIndex)
             } catch (error) {
                 console.error("Error loading page:", error)

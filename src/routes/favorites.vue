@@ -222,9 +222,10 @@ export default defineComponent ({
                     return favBlock
                 })
 
-                if (this.Payload.page) {
+                if (this.Payload.page?.data) {
                     this.Payload.page.data.blocks = [...page.blocks, ...blocks]
                 }
+                
                 this.tempPageBlocks = [...page.blocks, ...blocks]
                 this.updateLayoutSize()
                 this.updatePageBlocks(this.pageIsLoading)
@@ -255,12 +256,14 @@ export default defineComponent ({
                     defaultLayout.packerLayout = new Packer(defaultLayout.layoutWidth, 0, { autoResize: "height" })
                 }
 
-                this.pageBlocks = this.Payload.page.data.blocks
-                this.tempPageBlocks = []
+                if (this.Payload.page.data) {
+                    this.pageBlocks = this.Payload.page.data.blocks
+                    this.tempPageBlocks = []
+                }
             }
         },
         updateLayoutSize() {
-            if (!this.Payload.page?.data.layout) {
+            if (!this.Payload.page?.data?.layout) {
                 return
             }
             // Match these with Payload::pages.fields.layout for best DX

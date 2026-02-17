@@ -101,7 +101,7 @@ export default defineComponent ({
             defaultLines: 0,
             lines: 0,
             lineHeight: 1,
-            imageLoadTimeout: undefined as undefined | NodeJS.timeout,
+            imageLoadTimeout: undefined as undefined | NodeJS.Timeout,
             defaultCharactersPerLine: 0,
             charactersPerLine: 0,
             height: 0,

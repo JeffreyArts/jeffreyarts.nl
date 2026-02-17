@@ -87,7 +87,6 @@ export default defineComponent ({
         "$route.path": {
             handler() {
                 this.firstLoad = true
-                console.log("SET LOADED FALSE in $route.path watcher")
                 this.loaded = false
                 this.packerLayout = new Packer(this.layoutWidth, 0, { autoResize: "height" })
                 if (this.updateAllBlocksTimeout) {
@@ -96,20 +95,12 @@ export default defineComponent ({
             },
             immediate: false
         },
-        // Obsolete? Cause layoutSize is only modified by page switch or window resize, which are both already handled by other watchers
-        // "options.layoutSize": {
-        //     async handler() {
-        //         // this.updateAllBlockPositions()
-        //     },
-        //     immediate: true
-        // },
         "options.blocks": {
             handler(blocks) {
                 if (blocks.length <= 0) {
                     return
                 }
-                // console.log("SET LOADED FALSE in options.blocks watcher")
-                // this.loaded = false
+                
                 this.addBlocks(this.options.blocks)
             },
             deep: true,
@@ -145,12 +136,6 @@ export default defineComponent ({
             return `${position[type]}px`
         },
         addBlocks(newBlocks: BlockType[]){
-            // if (this.newBlocks.length == 0) {
-            //     this.firstLoad = true
-            // } else {
-            //     this.firstLoad = false
-            // }
-
             newBlocks.forEach(block => {
                 const blockExists = this.blocks.find(b => block.id === b.id)
                 if (blockExists) { return  }
