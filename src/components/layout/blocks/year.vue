@@ -54,10 +54,10 @@ export default defineComponent ({
             return
         }
         this.updateSVG()
-        window.addEventListener("layoutChange", this.updateSVG)
+        window.addEventListener("layoutLoaded", this.updateSVG)
     },
     unmounted() {
-        window.removeEventListener("layoutChange", this.updateSVG)
+        window.removeEventListener("layoutLoaded", this.updateSVG)
     },
     methods: {
         updateSVG(){
