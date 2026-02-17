@@ -227,14 +227,18 @@ export default defineComponent ({
             this.newBlocks.forEach(newBlock => {
                 this.addBlockToPacker(newBlock.block.id, ONLY_WIDTH)
             })
-            
-            dispatchEvent(new CustomEvent('layoutChange'))   
 
-            const complicatedBlockTypes = ["ascii", "line", "banner", "pieceThumbnail", "note" ]
+            dispatchEvent(new CustomEvent('layoutChange'))   
+            
+            const complicatedBlockTypes = ["ascii", "line", "banner", "pieceThumbnail", "note", "iframe"]
             let delay = 1000
             const hasComplicatedBlock = this.newBlocks.some( b => complicatedBlockTypes.includes(b.block.data.blockType) );
             if (!hasComplicatedBlock) {
                 delay = 100
+            } else {
+                setTimeout(() => {
+                    dispatchEvent(new CustomEvent('layoutChange'))   
+                }, 250)
             }
 
             // Set all the correct heights after 1 second, to give some time to any block that needs to update because the width has changed
@@ -307,7 +311,7 @@ export default defineComponent ({
                         return
                     }
 
-                    // Re-calculate width and height, (especially the height)
+                    // Re-calculate width and height manually, (especially the height)
                     const blockEl = newBlock.el as HTMLElement
                     const size = newBlock.block.size > this.options.layoutSize ? this.options.layoutSize : newBlock.block.size
                     const ratio = blockEl.clientWidth  / blockEl.clientHeight
