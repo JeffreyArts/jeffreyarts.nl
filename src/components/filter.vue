@@ -135,7 +135,6 @@ export default defineComponent({
                 this.updateLayoutSize()
                 this.reset()
                 this.setDefaults()
-                this.updateResults()
             },
             immediate: true
         },
@@ -380,10 +379,18 @@ export default defineComponent({
             map(this.filterOptions.categories, category => { category.selected = false  })
             map(this.filterOptions.year, year => { year.selected = false  })
             
-            this.blocks = []
+            this.blocks.length = 0
             this.firstLoad = true
             this.nextPage = 0
             this.hasNextPage = false
+            
+            // Remove old content
+            if (this.$refs["filter-layout"]) {
+                const filterLayout = this.$refs["filter-layout"] as InstanceType<typeof Layout>
+                filterLayout.newBlocks = []
+                filterLayout.blocks = []
+                filterLayout.processing = false
+            }
             
             this.hideLoadingMore()
         },

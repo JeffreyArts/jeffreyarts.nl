@@ -19,7 +19,6 @@
                 </span>
             </div>
 
-            
             <Block v-for="block,key in blocks" :key="key" @blockLoaded="blockLoaded(block)"
                 class="__isFixed"
                 :id="`block-${block.id}`"
