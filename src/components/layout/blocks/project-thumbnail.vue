@@ -254,8 +254,10 @@ export default defineComponent ({
         filter: saturate(1.04);
         opacity: 1;
         .project-thumbnail-block-title {
-            padding-left: 16px;
-            padding-right: 16px;
+            translate: 16px 0;
+            svg {
+                translate: -16px 0;
+            }
         }
         img {
             border-radius: 8px;
@@ -286,6 +288,7 @@ export default defineComponent ({
 
     svg {
         height: 10px;
+        transition: var(--transition-default);
     }
 }
 
