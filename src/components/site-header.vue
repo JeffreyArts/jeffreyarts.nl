@@ -586,7 +586,7 @@ export default defineComponent({
     top: calc(100% - 4px);
     display: none;
     flex-flow: column;
-    width: 128px;
+    width: 180px;
     
 }
 
