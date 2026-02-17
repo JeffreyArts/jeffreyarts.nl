@@ -1,4 +1,4 @@
-import _, { ListIterator, Many,PartialShallow,PropertyName, } from "lodash"
+import _, { ListIterator,PartialShallow,PropertyName, } from "lodash"
 
 export type Block = {
     width: number;
@@ -185,6 +185,15 @@ export default class Packer {
         return newPosition
     }
 
+    public updateBlock(updatedBlock: Block) {
+        const oldBlock = this.blocks.find((b) => b.id === updatedBlock.id);
+        const index = this.blocks.findIndex((b) => b.id === updatedBlock.id);
+        if (!oldBlock) {
+            throw new Error("Block not found");
+        }
+        this.blocks[index] = { ...oldBlock, ...updatedBlock };
+    }
+
     private fitRight = (target: Position, inputBlocks: Block[]) => {
         return _.without(_.map(inputBlocks, inputBlock => {
             const newBlock = {
@@ -317,9 +326,19 @@ export default class Packer {
         return undefined
     }
 
-    private updateLayout(cacheLength = 8) {
-        this.resultPositions = []
-        const inputBlocks = [...this.blocks] as Block[]
+    public updateLayout(cacheLength = 8, startIndex = 0) {
+        console.info("%cUpdating layout", "background-color: #0f9; color: #333; padding: 4px 8px;")
+        console.time("updateLayout")
+        this.resultPositions = this.resultPositions.slice(0, startIndex)
+
+        // Loop through resultPositions and only add blocks with an id
+        const inputBlocks = [] as Block[]
+        this.blocks.forEach((block, index) => {
+            if (index >= startIndex) {
+                inputBlocks.push(block)
+            }
+        })
+        
         let done = false
         if (inputBlocks.length <= 0) {
             throw new Error("No blocks to layout")

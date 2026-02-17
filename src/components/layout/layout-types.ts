@@ -37,6 +37,7 @@ export type BlockType = {
     x?:number
     y?:number
     loaded?: boolean
+    fadedIn?: boolean
     width?:number
     height?:number | "auto"
     data: BlockTypeData

@@ -153,6 +153,7 @@ const Filter = {
             const data = req.data as PaginationData
             resolve(data)
         } catch(err) {
+            console.error(`Error retrieving ${targetCollection} with query`, query, err)
             reject(err)
         }
     }),

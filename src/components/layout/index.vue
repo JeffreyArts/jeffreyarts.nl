@@ -1,5 +1,6 @@
 <template>
     <div class="layout-wrapper">
+
         <!-- firstLoad: {{ firstLoad }} -->
         <section  class="layout"
             :class="{
@@ -26,6 +27,7 @@
                 :data="block.data"
                 :class="{
                     '__isLoaded' : block.loaded,
+                    '__isFadedIn': block.fadedIn
                 }"
                 :style="{
                     width: calculatePos('width', block.id),
@@ -66,6 +68,7 @@ export default defineComponent ({
     },
     data() {
         return {
+            blockAddedTimeout: undefined as undefined | NodeJS.Timeout,
             timeoutDelay: undefined as undefined | NodeJS.Timeout,
             updateAllBlocksTimeout: undefined as undefined | NodeJS.Timeout,
             layoutWidth: 0 as number,
@@ -84,7 +87,10 @@ export default defineComponent ({
     watch:{
         "$route.path": {
             handler() {
+                this.firstLoad = true
+                console.log("SET LOADED FALSE in $route.path watcher")
                 this.loaded = false
+                this.packerLayout = new Packer(this.layoutWidth, 0, { autoResize: "height" })
                 if (this.updateAllBlocksTimeout) {
                     clearTimeout(this.updateAllBlocksTimeout)
                     gsap.set(this.$el.querySelectorAll(".layout-loader"), {opacity: 1})
@@ -92,22 +98,23 @@ export default defineComponent ({
             },
             immediate: false
         },
-        "options.layoutSize": {
-            async handler() {
-                // this.updateAllBlockPositions()
-            },
-            immediate: true
-        },
+        // Obsolete? Cause layoutSize is only modified by page switch or window resize, which are both already handled by other watchers
+        // "options.layoutSize": {
+        //     async handler() {
+        //         // this.updateAllBlockPositions()
+        //     },
+        //     immediate: true
+        // },
         "options.blocks": {
             handler(blocks) {
                 if (blocks.length <= 0) {
                     return
                 }
-                this.loaded = false
-
+                // console.log("SET LOADED FALSE in options.blocks watcher")
+                // this.loaded = false
                 this.addBlocks(this.options.blocks)
             },
-            deep:false,
+            deep: true,
             immediate: true // Cause if will first be an empty array, than it will be filled with blocks
         },
     },
@@ -125,132 +132,7 @@ export default defineComponent ({
             gsap.set(this.$el.querySelectorAll(".block"), {opacity: 0})
             this.timeoutDelay = setTimeout(this.updateAllBlockPositions, 100)
         },
-        // __findBlock(blockId: string | number, targetBlocks: BlockType[]) {
-        //     if (!blockId)  throw new Error("Missing id in posBlock")
-
-        //     let foundBlock = undefined
-        //     if (typeof blockId === "number") {
-        //         foundBlock = targetBlocks[blockId] as BlockType | undefined
-        //     } else if (typeof blockId === "string") {
-        //         foundBlock = _.find(targetBlocks, { id: blockId }) as BlockType | undefined
-        //     }
-        //     return foundBlock
-        // },
-        // __updateLayoutHeight() {
-        //     if (!this.$el) {
-        //         return
-        //     }
-
-        //     const layout = this.$el.querySelector(".layout")
-
-        //     if (!layout) {
-        //         return
-        //     }
-            
-        //     const lastBlock = _.maxBy(this.blocks, block => Number(block.height) + Number(block.y))
-        //     if (!lastBlock) {
-        //         return
-        //     }
-             
-        //     layout.style.height = `${Number(lastBlock.height) + Number(lastBlock.y)}px`
-
-        //     dispatchEvent(new CustomEvent("layoutChange"))
-            
-        // },
-        //  async __setBlockDimensions(blocks: Array<newBlock>){
-        //     const result = [] as Array<Promise<void>>
-        //     // Set block width + height
-        //     blocks.forEach((b) => {
-        //         const block = b.block
-        //         if (!block.width || !block.height) {
-        //             block.width = b.el.clientWidth
-        //             block.height = b.el.clientHeight
-        //         }
-        //         const ratio = block.width / block.height
-        //         b.width = block.size * this.layoutSizeRatio
-        //         b.height = b.width / ratio
-        //         console.log("Block", block)
-        //     })
-        //     // _.each(blocks, (b) => {
-        //     //     result.push(new Promise((resolve): void => {
-        //     //         const block = b.block
-        //     //         // const originalBlock = _.find(this.options.blocks, { id: block.id })
-        //     //         // if (!originalBlock) {
-        //     //         //     return
-        //     //         //     // throw new Error("Missing original reference")
-        //     //         // }
-                    
-        //     //         // block.size = block.size > this.options.layoutSize ? this.options.layoutSize : block.size
-        //     //         const ratio = b.width / b.height
-        //     //         b.width = block.size * this.layoutSizeRatio
-        //     //         b.height = b.width / ratio
-                    
-                    
-        //     //         // setTimeout(() => {
-        //     //         //     const targetBlock = this.$el.querySelector(`#block-${block.id}`)
-        //     //         //     console.log("Setting block dimensions for", targetBlock)   
-                        
-        //     //         //     if (!targetBlock) {
-        //     //         //         return
-        //     //         //     }
-                        
-        //     //         //     const blockStyle = window.getComputedStyle(targetBlock)
-                        
-        //     //         //     if (blockStyle) {
-        //     //         //         // block.height = parseInt(blockStyle.height)
-        //     //         //     }
-        //     //         //     resolve()
-                            
-        //     //         // })
-        //     //     }))
-        //     // })
-            
-        //     // await Promise.all(result)
-        //     return blocks
-        // },
-        // async redrawBlocks() {
-        //     this.packerLayout = new Packer(this.layoutWidth, 0, { autoResize: "height" })
-        //     await this.updateBlockSizes()
-        //     // this.updateBlockSizes()
-        // },
-        // async addNewBlocks() {
-        //     this.processing = true
-        //     dispatchEvent(new CustomEvent("layoutChange"))
-        //     // this.updateLayoutDimensions();
-        //     if (!this.packerLayout) { return }
-        //     const block = this.newBlocks[0]
-        //     const newBlock = {  
-        //         width: block.width || 0,
-        //         height: parseInt(block.height?.toString() || "0"),
-        //         position: this.blocks.length,
-        //         id: block.id
-        //     }
-            
-        //     const result = await this.packerLayout.addBlock(newBlock, 12);
-            
-        //     if (result) {
-        //         this.newBlocks = this.newBlocks.filter(b => b.id !== block.id)
-        //         // Update this.block with new position (match by id)
-        //         const index = this.blocks.findIndex(b => b.id === block.id)
-        //         if (index !== -1) {
-        //             this.blocks[index] = {
-        //                 ...this.blocks[index],
-        //                 x: result.x,
-        //                 y: result.y,
-        //                 width: result.width,
-        //                 height: result.height
-        //             }
-        //         }
-        //     }
-
-        //     if (this.newBlocks.length > 0) {
-        //         this.addNewBlocks()
-        //     } else {
-        //         this.__updateLayoutHeight()
-        //         this.processing = false
-        //     }
-        // },
-        calculatePos(type: "width" | "height" | "x" | "y", blockId: string | number) {
+        calculatePos(type: "width" | "x" | "y", blockId: string | number) {
             const position = this.newBlocks.find(b => b.block.id === blockId)?.position
             if (!position) {
                 return
@@ -265,17 +147,19 @@ export default defineComponent ({
             return `${position[type]}px`
         },
         addBlocks(newBlocks: BlockType[]){
-            if (this.newBlocks.length == 0) {
-                this.firstLoad = true
-            } else {
-                this.firstLoad = false
-            }
+            // if (this.newBlocks.length == 0) {
+            //     this.firstLoad = true
+            // } else {
+            //     this.firstLoad = false
+            // }
 
             newBlocks.forEach(block => {
                 const blockExists = this.blocks.find(b => block.id === b.id)
                 if (blockExists) { return  }
                 
-                this.blocks.push(block)
+                // This way of adding the block removes the link with the original block in options.blocks, 
+                // which prevents the options.blocks deep watcher from triggering unnecessary
+                this.blocks.push({...block})
             })
 
             this.blocks.forEach((block, index) => {
@@ -296,7 +180,6 @@ export default defineComponent ({
             }
 
             if (blockEl) {
-                // newBlock.el = blockEl
 
                 const size = newBlock.block.size > this.options.layoutSize ? this.options.layoutSize : newBlock.block.size
                 const ratio = blockEl.clientWidth  / blockEl.clientHeight
@@ -305,7 +188,24 @@ export default defineComponent ({
                 
                 newBlock.packerBlock.width = Math.floor(width)
                 newBlock.packerBlock.height = Math.floor(height)
-                const position = this.packerLayout.addBlock(newBlock.packerBlock, 12) as Position
+
+                // Check if block is already in packer layout
+                const alreadyInPacker = this.packerLayout.blocks.find(b => b.id === newBlock.packerBlock.id)
+                let position
+                
+
+                if (!alreadyInPacker) {
+                    position = this.packerLayout.addBlock(newBlock.packerBlock, 12) as Position
+                } else {
+                    position = {
+                        width: onlyWidth ? newBlock.packerBlock.width : alreadyInPacker.width,
+                        height: onlyWidth ? alreadyInPacker.height : newBlock.packerBlock.height,
+                        position: alreadyInPacker.position,
+                        x: newBlock.position.x,
+                        y: newBlock.position.y,
+                    }
+                }
+
                 if (onlyWidth) {
                     newBlock.position = {
                         height: NaN,
@@ -324,6 +224,7 @@ export default defineComponent ({
             if (!this.$el) {
                 return
             }
+
             const ONLY_WIDTH = true
 
             // Set helper variables
@@ -343,13 +244,14 @@ export default defineComponent ({
             this.newBlocks.forEach(newBlock => {
                 this.addBlockToPacker(newBlock.block.id, ONLY_WIDTH)
             })
+            
             dispatchEvent(new CustomEvent('layoutChange'))   
 
             const complicatedBlockTypes = ["ascii", "line", "banner", "pieceThumbnail", "note" ]
             let delay = 1000
             const hasComplicatedBlock = this.newBlocks.some( b => complicatedBlockTypes.includes(b.block.data.blockType) );
             if (!hasComplicatedBlock) {
-                delay = 0
+                delay = 100
             }
 
             // Set all the correct heights after 1 second, to give some time to any block that needs to update because the width has changed
@@ -363,7 +265,6 @@ export default defineComponent ({
 
                 dispatchEvent(new CustomEvent('layoutChange'))   
                 this.updateLayoutHeight()
-            
                 this.fadeInNewBlocks()
 
                 // Communicate that the layout has been loaded
@@ -388,6 +289,7 @@ export default defineComponent ({
             // Set helper variables
             this.layoutWidth = this.$el.clientWidth
             this.layoutSizeRatio = (this.layoutWidth) / this.options.layoutSize
+
             // Sort by position
             this.newBlocks.sort((a, b) => { 
                 if (a.position?.position === undefined) return 1;
@@ -400,20 +302,70 @@ export default defineComponent ({
             // Set all the correct widths
             this.newBlocks.forEach(newBlock => {
                 // If there is already a domElement connected, it is not really new and can be skipped
-                if (newBlock.el) {
+                if (newBlock.el?.classList.contains("__isFadedIn")) {
                     return
                 }
-                this.addBlockToPacker(newBlock.block.id)
-            })
-            dispatchEvent(new CustomEvent('layoutChange'))   
-            this.updateLayoutHeight()
-            
-            this.fadeInNewBlocks()
 
-            // Bit shady to not update height second time, but shouldn't be necessary cause the blocks that use this feature don't have such requirement (for now)
+                this.addBlockToPacker(newBlock.block.id, ONLY_WIDTH)
+            })
+            
+            this.updateLayoutHeight()
+
+            const complicatedBlockTypes = ["ascii", "line", "banner", "pieceThumbnail", "note" ]
+            let delay = 1000
+            const hasComplicatedBlock = this.newBlocks.some( b => complicatedBlockTypes.includes(b.block.data.blockType) );
+            if (!hasComplicatedBlock) {
+                delay = 0
+            }
+
             setTimeout(() => {
+                this.newBlocks.forEach(newBlock => {
+                    // If there is already a domElement connected, it is not really new and can be skipped
+                    if (newBlock.el?.style.opacity === "1") {
+                        return
+                    }
+
+                    // Re-calculate width and height, (especially the height)
+                    const blockEl = newBlock.el as HTMLElement
+                    const size = newBlock.block.size > this.options.layoutSize ? this.options.layoutSize : newBlock.block.size
+                    const ratio = blockEl.clientWidth  / blockEl.clientHeight
+                    const width = size * this.layoutSizeRatio
+                    const height = width / ratio
+                    
+                    newBlock.packerBlock.width = Math.floor(width)
+                    newBlock.packerBlock.height = Math.floor(height)
+
+                    this.packerLayout?.updateBlock(newBlock.packerBlock)
+                })
+                if (!this.packerLayout) {
+                    console.error("Packer layout is not defined")
+                    return
+                }
+
+                // Manually trigger a layout update 
+                const newPositions = this.packerLayout.updateLayout(12, (Math.round(this.newBlocks.length / 16) - 1) * 16)
+
+                newPositions.forEach(newPos => {
+                    const blockId = newPos.id as string | number
+                    let block = this.newBlocks.find(b => b.block.id === blockId)
+
+                    if (!block) {
+                        throw new Error("Invalid blockId ")
+                    }
+
+                    block.position = {
+                        ...newPos,
+                        position: block.position.position
+                    }
+                })
+                
+                // A bit shady solution but it works
+                gsap.to(this.$el.parentElement.querySelector(".loading-more"), { opacity: 0, duration: 0.32 })
+                this.loaded = true
+
+                this.fadeInNewBlocks()
                 this.updateLayoutHeight()
-            }, 500)
+            }, 250)
         },
         async blockLoaded(block: BlockType) {
             if (block.loaded) {
@@ -443,14 +395,15 @@ export default defineComponent ({
             
             // if all blocks are loaded, set their dimensions and positions
             if (this.blocks.every(block => block.loaded)) {
-                if (this.firstLoad) {
-                    // Update the connected domElements with the newBlocks, now they are all loaded
-                    this.newBlocks.forEach(b => {
-                        const blockEl = this.$el.querySelector(`#block-${b.block.id}`) as HTMLElement
-                        b.position.width = b.block.size * this.layoutSizeRatio,
-                        b.el = blockEl
-                    })
+                // Update the connected domElements with the newBlocks, now they are all loaded
+                this.newBlocks.forEach(b => {
+                    const blockEl = this.$el.querySelector(`#block-${b.block.id}`) as HTMLElement
+                    b.position.width = b.block.size * this.layoutSizeRatio,
+                    b.el = blockEl
+                })
+                
 
+                if (this.firstLoad) {
                     this.updateAllBlockPositions()  
                 } else {
                     this.addNewBlockPositions()
@@ -469,17 +422,26 @@ export default defineComponent ({
             });
 
             let cumulativeDelay = 0;
+            let countIndex = 0
             newBlocks.forEach((newBlock, index) => {
-                if (newBlock.el) {
+                if (newBlock.el && newBlock.el.style.opacity !== "1") {
                     // Stapgrootte wordt steeds kleiner, maar delay neemt altijd toe
-                    const step = Math.max(0.2 - (index * 0.02), 0.01);
+                    const step = Math.max(0.3 - (countIndex * 0.02), 0.01);
                     cumulativeDelay += step;
                     gsap.to(newBlock.el, {
                         opacity: 1,
                         duration: 0.24,
                         delay: cumulativeDelay,
                         ease: "sine.out",
+                        onComplete: () => {
+                            newBlock.block.fadedIn = true
+                            if (this.blocks.every(b => b.fadedIn) ) {
+                                window.dispatchEvent(new CustomEvent('layoutChange'))   
+                                window.dispatchEvent(new CustomEvent("blocksFadedIn"))
+                            }
+                        }
                     });
+                    countIndex++
                 }
             });
             
@@ -496,15 +458,12 @@ export default defineComponent ({
                 console.warn("Can not call updateLayout when this.$el has not yet been set")
                 return
             }
-
-            // Set these mandatory variables, required for other parts of the component
-            // this.layoutWidth = this.$el.clientWidth
-            // this.layoutSizeRatio = (this.layoutWidth) / this.options.layoutSize
         
             const layout = this.$el.querySelector(".layout")
-
+            
             if (!layout) { return }
             if (this.newBlocks.length != this.blocks.length) { return }
+
             // Get last block
             let lastBlock = this.newBlocks[0]
             this.newBlocks.forEach(newBlock => {
@@ -517,70 +476,10 @@ export default defineComponent ({
                 return
             }
              
+            // Set layout height to the bottom of the last block
             layout.style.height = `${Number(lastBlock.position.height) + Number(lastBlock.position.y)}px`
             dispatchEvent(new CustomEvent("layoutChange"))
         },
-        // updateBlockSizes() {
-        //     return new Promise(async (resolve) => {
-        //         console.log("Updating block sizes")
-        //         // // this.packerLayout = undefined
-        //         // this.updateLayout()
-            
-        //         const blocks = this.blocks
-        //         await this.__setBlockDimensions(blocks)
-        //         console.log("Block dimensions set", blocks)
-        //         setTimeout(async () => {
-        //             // await this.__setBlockDimensions(blocks)
-
-        //             // Convert height(:auto) to number to match setBlocks
-        //             // Re-position blocks according their default order to unshuffle setBlocks result
-        //             const convertedBlocks = _.orderBy(blocks.map(block => {
-        //                 if (typeof block.height === "undefined") {
-        //                     block.height = 0
-        //                 }
-                        
-        //                 if (typeof block.height === "string") {
-        //                     block.height = parseFloat(block.height)
-        //                 }
-                        
-        //                 return {
-        //                     id: block.id,
-        //                     position: block.position,
-        //                     width: block.width || 0,
-        //                     height: block.height
-        //                 }
-        //             }), "position")
-                    
-                    
-        //             if (!this.packerLayout) {
-        //                 this.packerLayout = new Packer(this.layoutWidth, 0, { autoResize: "height" })
-        //             }
-        //             this.sortedBlocks = this.packerLayout.setBlocks(convertedBlocks, 12)
-                    
-                    
-        //             if (this.sortedBlocks) {
-        //                 _.each(this.sortedBlocks, (posBlock) => {
-        //                     const blockId = posBlock.id as string | number
-        //                     let block = this.__findBlock(blockId, blocks)
-
-        //                     if (!block) {
-        //                         throw new Error("Invalid blockId ")
-        //                     }
-        //                     block.width = posBlock.width
-        //                     block.height = posBlock.height
-        //                     block.y = posBlock.y
-        //                     block.x = posBlock.x
-        //                 })
-        //             }   
-
-        //             setTimeout(() => {
-        //                 this.__updateLayoutHeight()
-        //             }, 0)
-
-        //             requestAnimationFrame(resolve)
-        //         }, 10)
-        //     })
-        // },
     }
 })
 
@@ -617,6 +516,8 @@ export default defineComponent ({
     position: relative;
     font-family: var(--accent-font);
     gap: 8px;
+    pointer-events: none;
+
     h6 {
         font-size: 16px;
         font-weight: 400;

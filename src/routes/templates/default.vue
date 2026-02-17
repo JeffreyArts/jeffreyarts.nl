@@ -207,22 +207,6 @@ export default defineComponent ({
                 ease: "sine.out"
             })
         },
-        // cancelPageLoad() {
-        //     if (this.pageIsLoading) {
-        //         clearTimeout(this.pageIsLoading)
-        //     }
-        //     // this.tempPageBlocks = []
-        //     this.pageBlocks = []
-        //     if (this.Payload.page) {
-        //         this.Payload.page.data.blocks = []
-        //     }
-
-        //     // Clear Layout blocks cache
-        //     if (this.$refs["default-layout"]) {
-        //         const defaultLayout = this.$refs["default-layout"] as InstanceType<typeof Layout>
-        //         // defaultLayout.blocks = []
-        //     }
-        // },
         async loadPage() {
             try {
                 this.pageSwitchIndex++
@@ -259,27 +243,6 @@ export default defineComponent ({
                 }, 50)
                 return
             }
-
-            // Cancel the fadeout and reset the blocks && newBlocks of the default-layout 
-            // if (this.fadeOutTimeout) {
-            //     clearTimeout(this.fadeOutTimeout)
-            //     this.pageFadedOut = true
-                        
-            //     if (this.$refs["default-layout"]) {
-            //         const defaultLayout = this.$refs["default-layout"] as InstanceType<typeof Layout>
-            //         defaultLayout.blocks = []
-            //         defaultLayout.newBlocks = []
-            //     }
-            // }
-                        // if (this.$refs["default-layout"]) {
-                        //     const defaultLayout = this.$refs["default-layout"] as InstanceType<typeof Layout>
-                        //     defaultLayout.blocks = []
-                        //     defaultLayout.newBlocks = []
-                        // }
-                        // console.log("Page faded out", this.Payload.page)
-                        // if (this.Payload.page?.data) {
-                        //     this.pageBlocks = this.Payload.page.data.blocks
-                        // }
 
             if (this.Payload.page) {
                 this.updateLayoutSize()
