@@ -135,17 +135,21 @@ export default defineComponent ({
             return comment.user.id == String(this.payload.auth?.self?.id)
         },
         async handleNewComment() {
-            console.log(this.payload.page)
             const self = this.payload.auth?.self
             if (!self) {
                 return
             }
             
+            const pageData = this.payload.page?.data
+            if (!pageData) {
+                return
+            }
+
             const response = await this.payload.POST("/page-comments", {
                 text: this.newComment,
                 user: self,
-                page_type: this.payload.page?.data.collectionType,
-                page_id: this.payload.page?.data.id
+                page_type: pageData.collectionType,
+                page_id: pageData.id
             })
             
             const footer = this.$refs.footer as HTMLElement

@@ -129,7 +129,7 @@ export default defineComponent ({
                         const ratio =  height / width
                         this.frame.width = this.$el.clientWidth
                         this.frame.height = this.$el.clientWidth * ratio
-                    } else if (window.innerHeight/window.innerWidth >= 1) { // Landscape
+                    } else if (window.innerHeight/window.innerWidth >= 1) { // Portrait
                         const width = parseInt(this.options.portraitRatio.split("/")[0])
                         const height = parseInt(this.options.portraitRatio.split("/")[1])
                         const ratio =  height / width
@@ -157,7 +157,7 @@ export default defineComponent ({
                     this.scale = this.$el.clientWidth / this.frame.width
                 }
 
-                this.refreshIframe()
+                // this.refreshIframe()
 
                 this.$emit("blockLoaded")
             } catch (error) {

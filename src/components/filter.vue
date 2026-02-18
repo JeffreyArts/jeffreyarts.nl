@@ -49,14 +49,17 @@
                 blocks: blocks
             }"
             :class="{'__hideLoader': blocks.length > 24}"
-            @loaded="fadeInBlocks"
             ref="filter-layout"/>
+
+        <div class="loading-more">
+            <span class="text">Loading more</span>
+        </div>
     </div>
 </template>
 
 
 <script lang="ts">
-import { defineComponent, PropType, nextTick } from "vue"
+import { defineComponent, PropType } from "vue"
 import Filter from "./../services/filter"
 import jaoIcon from "./jao-icon.vue"
 import selectBox, { SelectBoxOptions } from "./form/selectbox.vue"
@@ -104,11 +107,12 @@ export default defineComponent({
     data() {
         return {
             blocks: [] as Array<BlockType>,
-            limit: 16,
             page: 1,
+            newProjectsPerLoad: 16,
             layoutSize: 4,
-            updating: false,
+            updating: true,
             hasNextPage: false,
+            nextPage: 0,
             firstLoad: false,
             filterVal: {
                 onlyFavorites: false,
@@ -128,9 +132,9 @@ export default defineComponent({
         "$route.path": {
             handler() {
                 // Set page back to default when route has changed
-                this.page = 1
-                this.blocks = []
                 this.updateLayoutSize()
+                this.reset()
+                this.setDefaults()
             },
             immediate: true
         },
@@ -210,47 +214,68 @@ export default defineComponent({
     beforeCreate() {
     },
     mounted() {
+        this.setupScrollEvent()
         window.addEventListener("resize", this.onResizeEvent)
-        window.addEventListener("layoutLoaded", this.setupScrollEvent) 
+        window.addEventListener("blocksFadedIn", this.onScrollEvent)
         // window.addEventListener("layoutChange", this.fadeInBlocks)
     },
     unmounted() {
         window.removeEventListener("resize", this.onResizeEvent)
-        window.removeEventListener("layoutLoaded", this.setupScrollEvent) 
+        window.removeEventListener("blocksFadedIn", this.onScrollEvent)
         document.removeEventListener("scroll", this.onScrollEvent)
     },
     methods: {
+        showLoadingMore() {
+            this.updating = true
+            
+            gsap.to(".loading-more", {y:0, duration: 0.32 })
+            gsap.fromTo(".loading-more .text", {opacity: .32}, { opacity: 1, duration:.64, yoyo: true, repeat: -1 })
+        },
+        hideLoadingMore() {
+            this.updating = false
+
+            gsap.to(".loading-more", {y: "100%", duration: 0.32 })
+            gsap.to(".loading-more .text", { opacity: 0, duration: 0.32 })
+        },
         onResizeEvent() {
             this.updateLayoutSize()
         },
         onScrollEvent() {
+            // If the scroll position is greater than the layout height, load the next page
+            if (this.bottomOfPage()) {
+                this.page = this.nextPage
+                this.updateResults(this.page)
+                // document.removeEventListener("scroll", this.onScrollEvent)
+            }
+        },
+        blocksAdded() {
+            if (!this.$el) { 
+                return
+            }
+            const blocks = this.$el.querySelectorAll(".block.__isFadedIn") 
+            return blocks.length >= this.blocks.length - this.newProjectsPerLoad * .25
+        },
+        bottomOfPage() {
+            // Do not load next page if there is no next page or if we are already updating
+            
             const layout = this.$refs["filter-layout"] as HTMLElement
             if (!layout) { 
                 return
             }
             
-            const layoutHeight = document.body.clientHeight - window.innerHeight * 2
-            const scrollPosition = window.scrollY 
-            
-            // If the scroll position is greater than the layout height, load the next page
-            if (scrollPosition >= layoutHeight) {
-                this.page = this.page + 1
-                this.updateResults(this.page)
-                document.removeEventListener("scroll", this.onScrollEvent)
+            if (!this.hasNextPage || this.updating || !this.blocksAdded()) { 
+                return false
             }
+            const layoutHeight = document.body.clientHeight - window.innerHeight * 1.5
+            const scrollPosition = window.scrollY + window.innerHeight
+            
+            return scrollPosition >= layoutHeight
         },
         setupScrollEvent() {
-            if (this.updating || !this.hasNextPage) { 
-                return
-            }
-            
-            
-            const layoutHeight = document.body.clientHeight - window.innerHeight * 2
-            const scrollPosition = window.scrollY 
-            
+            console.info("%cSetting up scroll event", "background-color: #09f; color: white; padding: 4px 8px;")
             // If the scroll position is greater than the layout height, load the next page
-            if (scrollPosition >= layoutHeight) {
-                this.page = this.page + 1
+            if (this.bottomOfPage()) {
+                this.page = this.nextPage
                 this.updateResults(this.page)
             } else {
                 document.addEventListener("scroll", this.onScrollEvent)
@@ -258,6 +283,8 @@ export default defineComponent({
         },
         setDefaults() {
             // Process filter prefils
+
+            // Prefill series
             if (this.options.prefill.series) {
                 this.options.prefill.series.forEach(serie => {
                     const foundSerie = find(this.filterOptions.series, { value: serie.id })
@@ -268,7 +295,7 @@ export default defineComponent({
                 });
             }
 
-            // Process categories
+            // Prefill categories
             if (this.options.prefill.categories) {
                 this.options.prefill.categories.forEach(category => {
                     const foundCategory = find(this.filterOptions.categories, { value: category.id })
@@ -278,6 +305,8 @@ export default defineComponent({
                     }
                 });
             }
+
+            // Process year
             if (this.options.prefill.year) {
                 this.options.prefill.year.forEach(year => {
                     const foundYear = find(this.filterOptions.year, { value: Number(year) })
@@ -299,6 +328,7 @@ export default defineComponent({
                 })
             }
 
+            // Process route queries - categories
             if (this.$route.query.categories) {
                 const categories = this.$route.query.categories.split(",")
                 categories.forEach((category: string) => {
@@ -309,6 +339,7 @@ export default defineComponent({
                 })
             }
 
+            // Process route queries - year
             if (this.$route.query.year) {
                 const year = this.$route.query.year.split(",")
                 year.forEach((year: number) => {
@@ -347,9 +378,21 @@ export default defineComponent({
             map(this.filterOptions.series, serie => { serie.selected = false })
             map(this.filterOptions.categories, category => { category.selected = false  })
             map(this.filterOptions.year, year => { year.selected = false  })
-            this.blocks = []
-            this.updating = false
-            this.firstLoad = false
+            
+            this.blocks.length = 0
+            this.firstLoad = true
+            this.nextPage = 0
+            this.hasNextPage = false
+            
+            // Remove old content
+            if (this.$refs["filter-layout"]) {
+                const filterLayout = this.$refs["filter-layout"] as InstanceType<typeof Layout>
+                filterLayout.newBlocks = []
+                filterLayout.blocks = []
+                filterLayout.processing = false
+            }
+            
+            this.hideLoadingMore()
         },
         updateLayoutSize() {
             if (window.innerWidth > 1240) {
@@ -364,6 +407,9 @@ export default defineComponent({
         },
         updateSeries() {
             this.page = 1
+            this.nextPage = 0
+            this.hasNextPage = false
+
             this.blocks.length = 0
             const querySeries = filter(this.filterOptions.series, { selected: true }).map(serie => serie.value).join(",")
 
@@ -377,6 +423,9 @@ export default defineComponent({
         },
         updateYear() {
             this.page = 1
+            this.nextPage = 0
+            this.hasNextPage = false
+
             this.blocks.length = 0
             const queryYears = filter(this.filterOptions.year, { selected: true }).map(year => year.value).join(",")
 
@@ -390,6 +439,9 @@ export default defineComponent({
         },
         updateCategories() {
             this.page = 1
+            this.nextPage = 0
+            this.hasNextPage = false
+
             this.blocks.length = 0
             const queryCategories = filter(this.filterOptions.categories, { selected: true }).map(category => category.value).join(",")
 
@@ -401,34 +453,24 @@ export default defineComponent({
             })
             this.updateResults()
         },
-        fadeInBlocks() {
-            const filterLayout = document.getElementById("filter-layout")
-            if (!filterLayout) return
-
-            // Get all .block elements from filterLayout that have an opacity of 0
-            const allBlockElements = filterLayout.querySelectorAll(".block") as NodeListOf<HTMLElement>
-            const blockElements = Array.from(allBlockElements).filter((block: HTMLElement) => {
-                const computedStyle = getComputedStyle(block)
-                return computedStyle.opacity === "0"
-            })
-
-            gsap.fromTo(blockElements, 
-                { opacity: 0 },
-                { 
-                    opacity: 1,
-                    duration: 0.8,
-                    stagger: 0.16,
-                }
-            );
-        },
         updateResults(page = 1) {
-            if (this.updating) {
+            if (this.updating || typeof this.nextPage !== "number") {
                 return
             }
+
+            if (this.$refs["filter-layout"]) {
+                const filterLayout = this.$refs["filter-layout"] as InstanceType<typeof Layout>
+                filterLayout.processing = true
+            }
+
+            if (!this.firstLoad) {
+                gsap.to(this.$el.querySelector(".loading-more"), { opacity: 1, duration: 0.32 })
+            }
             
-            this.updating = true
+            this.showLoadingMore()
+            
             const query = {
-                limit: this.limit,
+                limit: this.newProjectsPerLoad,
                 page: page
             } as {
                 limit: number
@@ -457,30 +499,42 @@ export default defineComponent({
             if (this.options.name.toLowerCase() === "projects") {
                 query.archived = false
             }
+            
+            //
+            // Process filters
+            //
 
+            // ⏱️ SERIES
             const series = filter(this.filterOptions.series, { selected: true })
             if (series.length > 0) {
                 query.series = series.map(serie => serie.value.toString())
             }
-
+            
+            // ⏱️ CATEGORIES
             const categories = filter(this.filterOptions.categories, { selected: true })
             if (categories.length > 0) {
                 query.categories = categories.map(serie => serie.value.toString())
             }
-
+            
+            // ⏱️ YEAR
             const year = filter(this.filterOptions.year, { selected: true })
             if (year.length > 0) {
                 query.year = year.map(serie => serie.value.toString())
             }
+
+            // ⏱️ Projects
             if (this.options.prefill.projects) {
                 query.projects = this.options.prefill.projects.map(project => project.id)
             }
 
+
+            // Make API request with the processed query
             Filter.query(this.options.targetCollection, query).then((data) => {
                 this.hasNextPage = data.hasNextPage
-                let blocks = [] as Array<BlockType>
+                this.nextPage = data.nextPage
+                
                 if (this.options.targetCollection === "projects") {                    
-                    blocks = map(data.docs, (doc) => {
+                    data.docs.forEach((doc) => {
                         const block = {
                             size: 3,
                             id: doc.id,
@@ -492,12 +546,11 @@ export default defineComponent({
                                 image: doc.thumbnail
                             }
                         } as BlockType
-
-                        return block
+                        
+                        this.blocks.push(block)
                     })
-                    this.blocks = [...this.blocks, ...blocks]
                 } else if (this.options.targetCollection === "pieces") {                    
-                    blocks = map(data.docs, (doc) => {
+                    data.docs.forEach((doc) => {
                         const block = {
                             size: 3,
                             id: doc.id,
@@ -506,22 +559,24 @@ export default defineComponent({
                                 piece: doc
                             }
                         } as BlockType
-
-                        return block
+                        
+                        this.blocks.push(block)
                     })
-                    this.blocks = [...this.blocks, ...blocks]
                 }  
                 
                 this.$emit("filterUpdated")
                 this.$nextTick(() => {
-                    this.setupScrollEvent()
-                    // console.info("%cUpdating done", "background-color: #09f; color: white; padding: 4px 8px;")
-                    this.updating = false
+                    this.hideLoadingMore()
+
+                    if (this.$refs["filter-layout"]) {
+                        const filterLayout = this.$refs["filter-layout"] as InstanceType<typeof Layout>
+                        filterLayout.processing = false
+                    }
                 })
             }).catch(err => {
                 this.$emit("filterUpdated")
                 console.error(err)
-                this.updating = false
+                this.hideLoadingMore()
             })
         },
     }
@@ -651,5 +706,20 @@ export default defineComponent({
     .layout-loader {
         display: none;
     }
+}
+
+.loading-more {
+    width: 100%;
+    text-align: center;
+    padding: 16px;
+    font-family: var(--accent-font);
+    margin-top: -40px;
+    background-color: var(--bg-color);
+    padding: 8px 16px;
+    position: fixed;
+    bottom: 0;
+    z-index: 1;
+    transform: translateY(100%);
+    box-shadow: 0 0 8px rgba(0,0,0,.08);
 }
 </style>

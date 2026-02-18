@@ -3,8 +3,7 @@
         <pre class="ascii-block-content" ref="content">{{ ascii }}</pre>
         <div class="slider" ref="slider" :class="{'__isActive': slider.isActive}"
             v-if="options.allowResizing"
-            @mousedown="startSlider"
-            @touchstart="startSlider">
+            @pointerdown="startSlider">
             <div class="knob"></div>
         </div>
     </div>
@@ -102,6 +101,7 @@ export default defineComponent ({
             defaultLines: 0,
             lines: 0,
             lineHeight: 1,
+            imageLoadTimeout: undefined as undefined | NodeJS.Timeout,
             defaultCharactersPerLine: 0,
             charactersPerLine: 0,
             height: 0,
@@ -125,10 +125,12 @@ export default defineComponent ({
         this.$el.parentElement.style.zIndex = 1
 
         window.addEventListener("resize", this.scaleText)
+        window.addEventListener("layoutChange", this.setDefaultFontSize) 
         window.addEventListener("layoutLoaded", this.setDefaultFontSize) 
     },
     unmounted() {
         window.removeEventListener("resize", this.scaleText)
+        window.removeEventListener("layoutChange", this.setDefaultFontSize)
         window.removeEventListener("layoutLoaded", this.setDefaultFontSize) 
     },
     methods: {
@@ -146,13 +148,15 @@ export default defineComponent ({
         setDefaultFontSize(event: Event) {
             const customEvent = event as CustomEvent
             const blockID = this.$el.parentElement.id.replace("block-", "")
-            if (customEvent.detail.blocks) {
-                const block = customEvent.detail.blocks.find((block: any) => block.id === blockID)
-                if (block) {
-                    this.scaleText()
-                    this.defaultFontSize = this.fontSize
-                    this.scaleText()
-                }
+            let block = this.$el.parentElement
+
+            if (customEvent?.detail?.blocks) {
+                block = customEvent.detail.blocks.find((block: any) => block.id === blockID)
+            }
+            if (block) {
+                this.scaleText()
+                this.defaultFontSize = this.fontSize
+                this.scaleText()
             }
         },
         fadeInLetters() {
@@ -223,7 +227,10 @@ export default defineComponent ({
         scaleText(): void {
             const container = this.$refs.container as HTMLElement
             const content = this.$refs.content as HTMLElement
-
+            if (!content) {
+                return
+            }
+            
             const rects = content.getBoundingClientRect()
             this.height = rects.height
             content.style.fontSize = `${this.fontSize}px`
@@ -260,32 +267,37 @@ export default defineComponent ({
             const rects = slider.getBoundingClientRect()
             const xValue = clientX - rects.x
             
+            
             // Set slider value based on click position
-            if (xValue >= 0 && xValue <= rects.width) {
-                this.setSliderValue(xValue)
-            }
+            this.setSliderValue(xValue)
             
             // Start drag functionality
             this.slider.isActive = true
-            if (event instanceof MouseEvent) {
-                window.addEventListener("mousemove", this.moveSlider)
-                window.addEventListener("mouseup", this.endSlider)
-            } else if (event instanceof TouchEvent) {
-                window.addEventListener("touchmove", this.moveSlider)
-                window.addEventListener("touchend", this.endSlider)
-            }
+            window.addEventListener("pointerup", this.endSlider)
+            window.addEventListener("pointermove", this.moveSlider)
         },
-        async setSliderValue(xValue: number) {
-            // xValue is the pixelValue of X in relation to the parent container
-            // we need to convert this to a value between 0 and 1
+        calculateSliderValue(xValue: number) {
             const slider = this.$refs.slider as HTMLElement
             const rects = slider.getBoundingClientRect()
+            return Math.round((xValue / rects.width) * (this.slider.max - this.slider.min) + this.slider.min)
+        },
+        async setSliderValue(xValue: number) {
+            // Do not re-load the image if the slider value has not changed
+            if (this.calculateSliderValue(xValue) == this.slider.value ) {
+                return
+            }
 
-            
-            this.slider.value = Math.round((xValue / rects.width) * (this.slider.max - this.slider.min) + this.slider.min)
+            this.slider.value = this.calculateSliderValue(xValue)
             this.updateKnobPosition()
 
-            this.imageLoading = this.loadAciiImage()
+            if (this.imageLoadTimeout) {
+                clearTimeout(this.imageLoadTimeout)
+            }
+
+            this.imageLoadTimeout = setTimeout(() => {
+                this.imageLoading = this.loadAciiImage()
+            }, 100)
+
         },
         updateKnobPosition() {
             const slider = this.$refs.slider as HTMLElement
@@ -337,10 +349,8 @@ export default defineComponent ({
             } else {
                 this.slider.isActive = false
             }
-            window.removeEventListener("mousemove", this.moveSlider)
-            window.removeEventListener("mouseup", this.endSlider)
-            window.removeEventListener("touchmove", this.moveSlider)
-            window.removeEventListener("touchend", this.endSlider)
+            window.removeEventListener("pointermove", this.moveSlider)
+            window.removeEventListener("pointerup", this.endSlider)
         }
     }
 })
@@ -374,14 +384,14 @@ export default defineComponent ({
 .slider {
     position: absolute;
     bottom: -32px;
-    left: 0;
     width: calc(100% - 64px);
     min-width: 128px;
     max-width: 320px;
     height: 64px;
     padding: 0 16px;
     // background-color: #ccc;
-    left: 25%;
+    left: 50%;
+    translate: -50% 0;
     opacity: 0;
     transition: opacity 0.3s ease-in-out;
 

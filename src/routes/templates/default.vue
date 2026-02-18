@@ -2,13 +2,13 @@
     <section class="default-template" v-if="!is404">
         <Breadcrumbs />
 
-        <Layout v-if="Payload?.page?.data?.layout" id="default-layout" ref="default-layout" :options="{
+        <Layout v-if="pageData?.layout" id="default-layout" ref="default-layout" :options="{
             layoutGap: 40,
-            id: Payload.page?.data.id,
+            id: pageData.id,
             layoutSize: layoutSize,
-            blocks: pageBlocks
+            blocks: pageData.blocks
         }" @loaded="loaded"/>
-        <FilterComponent v-if="Payload.page?.data?.filter?.name && showFilters" :options="Payload.page?.data?.filter" :pageDetails="Payload.page.data" ref="filter" @filterUpdated="updateFilter"/>
+        <FilterComponent v-if="pageData?.filter?.name && showFilters" :options="pageData?.filter" :pageDetails="pageData" ref="filter" @filterUpdated="updateFilter"/>
     </section>
 
     <page404 v-if="is404"/>
@@ -18,8 +18,8 @@
 <script lang="ts">
 import { defineComponent } from "vue"
 import gsap from "gsap"
-import Packer from "@/model/packer"
 import { ScrollToPlugin } from "gsap/ScrollToPlugin";
+import {PageType} from "@/model/payload/page"
 
 import payloadStore from "@/stores/payload"
 import { useHead }  from "@unhead/vue"
@@ -77,8 +77,8 @@ export default defineComponent ({
     },
     computed: {
         showFilters() {
-            if (this.Payload?.page?.data?.filter && typeof this.Payload.page.data.displayFilters === "boolean") {
-                return this.Payload.page.data.displayFilters
+            if (this.pageData?.filter && typeof this.pageData.displayFilters === "boolean") {
+                return this.pageData.displayFilters
             } else {
                 return true
             }
@@ -91,10 +91,10 @@ export default defineComponent ({
             is404: false,
             pageLoaded: false,
             pageSwitchIndex: 0,
-            pageBlocks: [] as Array<BlockType>,
-            tempPageBlocks: [] as Array<BlockType>,
             abortController: null as AbortController | null,
-            pageIsLoading: null as NodeJS.Timeout | null
+            fadeOutTimeout: undefined as undefined | NodeJS.Timeout,
+            pageIsLoading: null as NodeJS.Timeout | null,
+            pageData: undefined as PageType | undefined
         }
     },
     watch: {
@@ -102,36 +102,15 @@ export default defineComponent ({
             async handler() {
                 this.pageLoaded = false
                 this.is404 = false
-
-                await this.loadPage()
-
-                const blokElements = Array.from(document.querySelectorAll("#default-layout .block"))
-                    .sort((a, b) => (a as HTMLElement).offsetTop - (b as HTMLElement).offsetTop);
+                
+                const blokElements = Array.from(document.querySelectorAll("#default-layout .block")) //.sort((a, b) => (a as HTMLElement).offsetTop - (b as HTMLElement).offsetTop);
                 if (blokElements.length > 0) {
-                    for (let index = 0; index < blokElements.length; index++) {
-                        const element = blokElements[index] as HTMLElement;
-                        const viewportHeight = window.innerHeight;
-                        let onCompleteAdded = false
+                    this.fadeOutPage()
+                } 
 
-                        gsap.to(element, {
-                            opacity: 0,
-                            duration: .24,
-                            delay: index * .1,
-                            ease: "sine.out",
-                            onComplete: () => {
-                                if ((element.offsetTop > viewportHeight || index === blokElements.length - 1)  && !onCompleteAdded) {
-                                    setTimeout(() => {
-                                        this.pageLoaded = true
-                                        onCompleteAdded = true
-                                    }, 240)
-                                }
-                            }
-                        })
-                    }
-                } else {
-                    this.pageLoaded = true
-                }
+                this.pageLoaded = await this.loadPage()
 
+                    
                 // Scroll to top
                 gsap.to(window, {
                     scrollTo: { y: 0 }, // Scroll to the top of the page
@@ -163,73 +142,65 @@ export default defineComponent ({
     methods: {
         loaded() {
             this.$nextTick(() => {
-                const blokElements = document.querySelectorAll("#default-layout .block")
-                setTimeout(() => {
-                    if (blokElements.length > 0) {
-                        for (let index = 0; index < blokElements.length; index++) {
-                            const element = blokElements[index];
-
-                            gsap.fromTo(element, { opacity: 0 },{
-                                opacity: 1,
-                                duration: .24,
-                                delay: .1 + index * .1,
-                                ease: "sine.out",
-                                onComplete: () => {
-                                    // Check if a #filter-layout exists in the current url, using this.$route.hash
-                                    if (this.$route.hash === "#filter-layout") {
-                                        const filterLayout = document.getElementById("filter-layout")
-                                        if (filterLayout) {
-                                            filterLayout.scrollIntoView({ behavior: "smooth" })
-                                        }
-                                    }
-                                }
-                            })
-                        }
+                if (this.$route.hash === "#filter-layout") {
+                    const filterLayout = document.getElementById("filter-layout")
+                    if (filterLayout) {
+                        filterLayout.scrollIntoView({ behavior: "smooth" })
                     }
-                }, blokElements.length * 1)
+                }
             })
         },
-        cancelPageLoad() {
-            if (this.pageIsLoading) {
-                clearTimeout(this.pageIsLoading)
-            }
-            this.tempPageBlocks = []
-            this.pageBlocks = []
-            if (this.Payload.page) {
-                this.Payload.page.data.blocks = []
-            }
+        fadeOutPage() {
+            const blokElements = Array.from(document.querySelectorAll("#default-layout .block")).sort((a, b) => (a as HTMLElement).offsetTop - (b as HTMLElement).offsetTop);
             
-            // Clear Layout blocks cache
-            if (this.$refs["default-layout"]) {
-                const defaultLayout = this.$refs["default-layout"] as InstanceType<typeof Layout>
-                defaultLayout.newBlocks = []
-            }
+            const viewportHeight = window.innerHeight;
+    
+            blokElements.forEach((el, index) => {
+                const element = el as HTMLElement
+                const rect = element.getBoundingClientRect();
+                const offsetTop = rect.top;
+                if ((offsetTop > viewportHeight || index === blokElements.length - 1)  && !this.fadeOutTimeout) {
+                    this.fadeOutTimeout = setTimeout(() => {
+                        this.fadeOutTimeout = undefined
+                    }, index * 250)
+                }
+            })
+            
+            gsap.to("#default-layout .block", {
+                opacity: 0,
+                duration: .24,
+                stagger: 0.1,
+                ease: "sine.out"
+            })
         },
         async loadPage() {
             try {
                 this.pageSwitchIndex++
-                this.cancelPageLoad()
+
+                if (this.$refs["default-layout"]) {
+                    const defaultLayout = this.$refs["default-layout"] as InstanceType<typeof Layout>
+                    defaultLayout.processing = true
+                }
                 const res = await this.Payload.getPageByPath(this.$route.path)
                 
-                // this.Payload.page?.data = res as PageType
                 if (!res) {
                     this.is404 = true
-                    return
+                    return true
                 }
-                this.tempPageBlocks = res.blocks
-                this.updateLayoutSize()
+
                 this.updatePageBlocks(this.pageSwitchIndex)
             } catch (error) {
                 console.error("Error loading page:", error)
                 this.is404 = true
             }
+            return true
         },
         updatePageBlocks(index: number) {
             if (index !== this.pageSwitchIndex) {
                 return
             }
 
-            if (!this.pageLoaded) {
+            if (!this.pageLoaded || this.fadeOutTimeout || !this.Payload.page?.data) {
                 // Repeat this function until pageLoaded is true
                 this.pageIsLoading = setTimeout(() => {
                     this.updatePageBlocks(index)
@@ -238,21 +209,25 @@ export default defineComponent ({
             }
 
             if (this.Payload.page) {
-                // Add new content
                 this.updateLayoutSize()
-
+                
+                // Remove old content
                 if (this.$refs["default-layout"]) {
                     const defaultLayout = this.$refs["default-layout"] as InstanceType<typeof Layout>
+                    defaultLayout.newBlocks = []
                     defaultLayout.blocks = []
-                    defaultLayout.packerLayout = new Packer(defaultLayout.layoutWidth, 0, { autoResize: "height" })
+                    defaultLayout.processing = false
                 }
-
-                this.pageBlocks = this.Payload.page.data.blocks
-                this.tempPageBlocks = []
+                
+                // Add new content
+                if (this.Payload.page.data) {
+                    this.pageData = this.Payload.page.data
+                }
+                this.updateLayoutSize()
             }
         },
         updateLayoutSize() {
-            if (!this.Payload.page?.data.layout) {
+            if (!this.pageData?.layout) {
                 return
             }
             // Match these with Payload::pages.fields.layout for best DX
@@ -274,7 +249,7 @@ export default defineComponent ({
             }
             this.breakpoint = breakPoint
             const size = `size_${this.breakpoint}` as "size_xs" | "size_s" | "size_m" | "size_l" | "size_xl" 
-            this.layoutSize = this.Payload.page?.data.layout[size]
+            this.layoutSize = this.pageData.layout[size]
         },
         updateFilter() {
             // Doe dingen ?

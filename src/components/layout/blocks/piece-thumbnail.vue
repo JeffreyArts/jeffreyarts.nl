@@ -515,12 +515,24 @@ export default defineComponent ({
     }
 
     svg {
-        height: 22px;
+        height: 18px;
         display: block;
     }
 }
 
 .piece-thumbnail-footer-year svg {
-    height: 24px;
+    height: 18px;
+}
+
+@media (min-width: 480px) {
+    .piece-thumbnail-footer-right {
+        svg {
+            height: 22px;
+        }
+    }
+    .piece-thumbnail-footer-year svg {
+        height: 24px;
+    }
+
 }
 </style>

@@ -34,10 +34,11 @@ export class PayloadPageModel {
     private readonly endpoint = import.meta.env.VITE_PAYLOAD_REST_ENDPOINT;
     private readonly collectionName = "pages";
     
-    public data = {} as PageType
+    public data = undefined as PageType | undefined
 
     async getPageByPath(path: string): Promise<PageType> {
         let collection = this.collectionName;
+        this.data = undefined
 
         if (path.startsWith("/project/")) {
             collection = "projects";

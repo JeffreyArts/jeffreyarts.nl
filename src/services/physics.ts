@@ -83,6 +83,12 @@ const PhysicsService = {
         }
     },
     layoutHasChangedEvent: () => {
+
+        // Check if layout is loaded
+        if (!document.querySelector(".layout.__isLoaded")) {
+            return
+        }
+
         // Clear any existing timeout
         if (PhysicsService.debounceTimeout) {
             clearTimeout(PhysicsService.debounceTimeout)

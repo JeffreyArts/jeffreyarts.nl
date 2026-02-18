@@ -1,6 +1,7 @@
 <template>
     <div class="block" :block-size="size">
         <AsciiBlock @blockLoaded="blockLoaded" :options="data" v-if="data.blockType === 'ascii'"                :data-blocktype="data.blockType"/>
+        <CovidStarBlock @blockLoaded="blockLoaded" :options="data" v-if="data.blockType === 'covidStar'"        :data-blocktype="data.blockType"/>
         <TitleBlock @blockLoaded="blockLoaded" :options="data" v-if="data.blockType === 'title'"                :data-blocktype="data.blockType"/>
         <YearBlock @blockLoaded="blockLoaded" :options="data" v-if="data.blockType === 'year'"                  :data-blocktype="data.blockType"/>
         <NoteBlock @blockLoaded="blockLoaded" :options="data" v-if="data.blockType === 'note'"                  :data-blocktype="data.blockType"/>
@@ -28,6 +29,7 @@ import { defineComponent, PropType } from "vue"
 import AsciiBlock from "./ascii.vue"
 import BannerBlock from "./banner.vue"
 import CodeBlock from "./code.vue"
+import CovidStarBlock from "./covid-star.vue"
 import GlitchBlock from "./glitch.vue"
 import IframeBlock from "./iframe.vue"
 import ImageBlock from "./image.vue"
@@ -53,6 +55,7 @@ export default defineComponent ({
         AsciiBlock,
         BannerBlock,
         CodeBlock,
+        CovidStarBlock,
         GlitchBlock,
         IframeBlock,
         ImageBlock,
@@ -118,6 +121,9 @@ export default defineComponent ({
     
     &.__isFixed {
         position: absolute;
+    } 
+    &.__isLoaded {
+        opacity: 0;
     } 
 
     // Display blockType for dev purposes

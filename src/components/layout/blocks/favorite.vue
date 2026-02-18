@@ -71,7 +71,7 @@ export default defineComponent ({
     },
     methods: {
         async setSelfLove() {
-            if (!this.payload.page) return
+            if (!this.payload.page?.data) return
             
             const pageId = this.payload.page.data.id
             const pageType = this.payload.page.data.collectionType
@@ -80,7 +80,7 @@ export default defineComponent ({
         },
 
         async loadFavs() {
-            if (!this.payload.page) return
+            if (!this.payload.page?.data) return
             
             const pageId = this.payload.page.data.id
             const pageType = this.payload.page.data.collectionType
@@ -89,7 +89,7 @@ export default defineComponent ({
         },
 
         async toggleLike() {
-            if (this.blocked || !this.payload.page) return
+            if (this.blocked || !this.payload.page?.data) return
             
             const pageId = this.payload.page.data.id
             const pageType = this.payload.page.data.collectionType

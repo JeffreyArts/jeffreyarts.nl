@@ -28,8 +28,9 @@
                 }"
                 />
         </div>
-
-        <Glitch 
+        
+        <div class="layer3">
+            <Glitch 
             v-for="(inputs, key) in glitchInputs"
             :inputs="inputs"
             :key="key"
@@ -43,6 +44,7 @@
                 fontStretch: `${Math.random() * 55 + 55}%`
             }"
             />
+        </div>
     </div>
 </template>
 
@@ -237,10 +239,22 @@ export default defineComponent ({
     overflow: hidden;
     display: flex;
     bottom: 0;
-    top: 0;
+    top: 64px;
+    left: -25%;
+    right: -25%;
+    font-size: 2em;
+    flex-flow: row wrap;
+    justify-content: center;
+    align-items: center;
+}
+.layer3 {
+    position: absolute;
+    overflow: hidden;
+    display: flex;
+    bottom: 0;
+    top: 64px;
     left: 0;
     right: 0;
-    font-size: 2em;
     flex-flow: row wrap;
     justify-content: center;
     align-items: center;
