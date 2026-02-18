@@ -8,8 +8,7 @@
     "dev": "vite",
     "build": "node ./src/generateRoutes.js && vue-tsc && vite build",
     "generate-routes": "node ./src/generateRoutes.js",
-    "deploy": "NODE_ENV=staging bash scripts/deploy.sh",
-    "production": "NODE_ENV=production bash scripts/deploy.sh",
+    "deploy": "NODE_ENV=production bash scripts/deploy.sh",
     "preview": "vite preview"
   },
   "engines": {

@@ -8,7 +8,7 @@
         </span>
         <div class="selectbox-wrapper">
 
-            <span class="selectbox-options" :style="direction == 'up' ? 'bottom: calc(100% + 4px);' : 'top: calc(100% + 4px);'">
+            <span class="selectbox-options" :style="direction == 'up' ? 'bottom: calc(100% + 8px);' : 'top: calc(100% + 6px);'" @mouseleave="closeSelect">
                 <span class="selectbox-option" v-for="(option,key) in options" :key="key" @click="selectOption(key, $event)"
                     :class="[
                         !option.available ? '__isHidden' : '',
@@ -20,7 +20,9 @@
                         :name="option.selected ? 'checkbox-checked' : 'checkbox'"
                         :transit-effect="{ duration: .1, delay:.002, effect: 'top-to-bottom'}" 
                         />
-                    {{ option.label }}
+                    <span>
+                        {{ option.label }}
+                    </span>
                 </span>
             </span>
 
@@ -132,8 +134,8 @@ export default defineComponent({
                 }
                 parent = parent.parentElement
             }
-            
-            if (cancel) {
+
+            if (cancel || e.type == "mouseleave") {
                 document.removeEventListener("click", this.closeSelect)
                 this.isOpen = false
             }
@@ -215,10 +217,10 @@ export default defineComponent({
     z-index: 2024;
     display: none;
     right: 0;
-    min-width: 240px;
+    min-width: 144px;
     max-height: 240px;
+    width: 100%;
     overflow: auto;
-    width: calc(100% - 24px);
     background-color: #fff;
     gap: 8px;
     flex-flow: row wrap;
@@ -240,10 +242,11 @@ export default defineComponent({
 }
 .selectbox-option {
     width: 100%;
-    display: flex;
+    display: grid;
     align-items: center;
     padding: 8px 4px;
     gap: 8px;
+    grid-template-columns: 18px 1fr;
 
     // This needs to be updated
     // &:hover {
