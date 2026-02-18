@@ -2,6 +2,7 @@
 import { AsciiBlock } from "./blocks/ascii.vue"
 import { BannerBlock } from "./blocks/banner.vue"
 import { CodeBlock } from "./blocks/code.vue"
+import { CovidStarBlock } from "./blocks/covid-star.vue"
 import { GlitchBlock } from "./blocks/glitch.vue"
 import { IframeBlock } from "./blocks/iframe.vue"
 import { Model3DBlock } from "./blocks/model-3d.vue"
@@ -27,7 +28,7 @@ export interface LayoutOptions {
     blocks: Array<BlockType>
 }
 
-export type BlockTypeData = AsciiBlock | TitleBlock | TextBlock | TagsBlock | FavoriteBlock | Model3DBlock | PageCommentsBlock | PieceThumbnailBlock | ProjectThumbnailBlock | ProjectArticleBlock | YearBlock  | NoteBlock | ImageBlock | LineBlock | BannerBlock | GlitchBlock | CodeBlock | IframeBlock | YoutubeBlock | NewsletterBlock
+export type BlockTypeData = AsciiBlock | BannerBlock | CodeBlock | CovidStarBlock | FavoriteBlock | GlitchBlock | IframeBlock | ImageBlock | LineBlock | Model3DBlock | NewsletterBlock | NoteBlock | PageCommentsBlock | PieceThumbnailBlock | ProjectArticleBlock | ProjectThumbnailBlock | TagsBlock | TextBlock | TitleBlock | YearBlock  | YoutubeBlock
 
 export type BlockType = {
     size: number
