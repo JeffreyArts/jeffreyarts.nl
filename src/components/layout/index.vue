@@ -259,7 +259,7 @@ export default defineComponent ({
                 dispatchEvent(new CustomEvent('layoutLoaded', { detail: this.options }))   
             }, delay)
 
-            gsap.to(".layout-loader", {
+            gsap.to(this.$el.querySelector(".layout-loader"), {
                 opacity: 0,
                 duration: delay ? .5 : 0,
                 delay: delay ? .5 : 0,

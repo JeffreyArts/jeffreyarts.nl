@@ -128,7 +128,6 @@ export default defineComponent ({
         },
 
         async loadImage() {
-            const img = this.$refs["image"] as HTMLImageElement;
             
             if (!this.options.string) {
                 // set string to current date dd-mm-yyyy
@@ -143,7 +142,6 @@ export default defineComponent ({
             let uri = `${import.meta.env.VITE_PAYLOAD_REST_ENDPOINT}/covid-star/name/${inputString}?inverted=true`
             
             await axios.get(uri).then((res) => {
-                console.log("Covid star image response", res)
                 if (res.data && res.data.docs) {
                     this.options.image = res.data.docs[0]
                 }
@@ -151,12 +149,14 @@ export default defineComponent ({
                 console.error("Error loading covid star image", err)
             })
 
+            const img = this.$refs["image"] as HTMLImageElement;
             
             if (!img) {
                 this.$emit("blockLoaded");
                 return;
             }
-
+            
+            
             img.addEventListener("load", this.loadHandler);
             img.addEventListener("error", this.loadHandler);
             
