@@ -29,7 +29,6 @@
                     '__isFadedIn': block.fadedIn
                 }"
                 :style="{
-                    width: calculatePos('width', block.id),
                     top: calculatePos('y', block.id),
                     left: calculatePos('x', block.id),
                 }">
@@ -163,14 +162,7 @@ export default defineComponent ({
             }
 
             if (blockEl) {
-
-                const size = newBlock.block.size > this.options.layoutSize ? this.options.layoutSize : newBlock.block.size
-                const ratio = blockEl.clientWidth  / blockEl.clientHeight
-                const width = size * this.layoutSizeRatio
-                const height = width / ratio
-                
-                newBlock.packerBlock.width = Math.floor(width)
-                newBlock.packerBlock.height = Math.floor(height)
+                this.updateBlockDimensions(newBlock)
 
                 // Check if block is already in packer layout
                 const alreadyInPacker = this.packerLayout.blocks.find(b => b.id === newBlock.packerBlock.id)
@@ -203,12 +195,33 @@ export default defineComponent ({
                 console.error("Missing block element for block id:", newBlock.block.id)
             }
         },
+        updateBlockDimensions(newBlock: newBlock) {
+            if (!newBlock.el) {
+                newBlock.el = this.$el.querySelector(`#block-${newBlock.block.id}`) as HTMLElement
+            }
+
+            if (!newBlock.el) {
+                console.error("Missing block element for block id:", newBlock.block.id)
+                return
+            }
+                
+            const size = newBlock.block.size > this.options.layoutSize ? this.options.layoutSize : newBlock.block.size
+            const width = size * this.layoutSizeRatio
+            if (newBlock.el) {
+                newBlock.el.style.width = `${width}px`
+            }
+            
+            const ratio = newBlock.el.clientWidth  / newBlock.el.clientHeight
+            const height = width / ratio
+            
+            newBlock.packerBlock.width = Math.floor(width)
+            newBlock.packerBlock.height = Math.floor(height)
+
+        },
         async updateAllBlockPositions() {
             if (!this.$el) {
                 return
             }
-
-            const ONLY_WIDTH = true
 
             // Set helper variables
             this.layoutWidth = this.$el.clientWidth
@@ -223,10 +236,8 @@ export default defineComponent ({
                 return a.position.position - b.position.position;
             });
 
-            // Set all the correct widths
-            this.newBlocks.forEach(newBlock => {
-                this.addBlockToPacker(newBlock.block.id, ONLY_WIDTH)
-            })
+            // Set all the correct dimensions
+            this.newBlocks.forEach(this.updateBlockDimensions)
 
             dispatchEvent(new CustomEvent('layoutChange'))   
             
@@ -291,8 +302,7 @@ export default defineComponent ({
                 if (newBlock.el?.classList.contains("__isFadedIn")) {
                     return
                 }
-
-                this.addBlockToPacker(newBlock.block.id, ONLY_WIDTH)
+                this.updateBlockDimensions(newBlock)
             })
             
             this.updateLayoutHeight()
@@ -311,17 +321,8 @@ export default defineComponent ({
                         return
                     }
 
-                    // Re-calculate width and height manually, (especially the height)
-                    const blockEl = newBlock.el as HTMLElement
-                    const size = newBlock.block.size > this.options.layoutSize ? this.options.layoutSize : newBlock.block.size
-                    const ratio = blockEl.clientWidth  / blockEl.clientHeight
-                    const width = size * this.layoutSizeRatio
-                    const height = width / ratio
-                    
-                    newBlock.packerBlock.width = Math.floor(width)
-                    newBlock.packerBlock.height = Math.floor(height)
-
-                    this.packerLayout?.updateBlock(newBlock.packerBlock)
+                    this.addBlockToPacker(newBlock.block.id, ONLY_WIDTH)
+                    // this.packerLayout?.updateBlock(newBlock.packerBlock)
                 })
                 if (!this.packerLayout) {
                     console.error("Packer layout is not defined")
