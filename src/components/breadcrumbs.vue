@@ -37,6 +37,9 @@ export default defineComponent({
     watch: {
         "Payload.page.data": {
             handler() {
+                if (!this.Payload.page?.data) {
+                    return
+                }
                 this.changePath()
                 this.changeIcon()
             }, 
