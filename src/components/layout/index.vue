@@ -264,7 +264,7 @@ export default defineComponent ({
                 // Communicate that the layout has been loaded
                 this.loaded = true
                 this.$emit("loaded", this.loaded)
-                dispatchEvent(new CustomEvent('layoutLoaded', { detail: this.options }))   
+                dispatchEvent(new CustomEvent('layoutLoaded', { detail: {...this.options, id: this.$el.id} }))   
             }, delay)
 
             gsap.to(this.$el.querySelector(".layout-loader"), {

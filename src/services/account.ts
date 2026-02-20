@@ -14,7 +14,6 @@ const AccountService = {
     },
 
     register: async (newEmail:string, email: string, password: string): Promise<boolean> => {
-        console.log("ACCOUNT REGISTER ROUTE")
         return new Promise(async (resolve) => {
             try {
                 const response = await axios.post(`${import.meta.env.VITE_PAYLOAD_REST_ENDPOINT}/site-users/register`, {

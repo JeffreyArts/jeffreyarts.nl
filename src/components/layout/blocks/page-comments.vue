@@ -165,8 +165,6 @@ export default defineComponent ({
                     }
                     // Add the new comment to the comments array (at the top)
                     this.options.comments.unshift(response.data.doc)
-
-                    console.log(this.options.comments, response.data)
                     this.newComment = ""
                 }
             })

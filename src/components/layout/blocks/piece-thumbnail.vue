@@ -532,6 +532,10 @@ export default defineComponent ({
 
 .piece-thumbnail-footer-year svg {
     height: 18px;
+
+    rect[v="0"] {
+        fill: transparent;
+    }
 }
 
 @media (min-width: 480px) {

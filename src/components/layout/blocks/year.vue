@@ -28,7 +28,7 @@ export default defineComponent ({
     },
     data() {
         return {
-            
+            fadingIn: false,
         }
     },
     watch:{
@@ -53,14 +53,32 @@ export default defineComponent ({
         if (typeof window === "undefined") {
             return
         }
-        this.updateSVG()
-        window.addEventListener("layoutLoaded", this.updateSVG)
+        this.updateSVG(false)
+        window.addEventListener("layoutLoaded", this.layoutLoaded)
     },
     unmounted() {
-        window.removeEventListener("layoutLoaded", this.updateSVG)
+        window.removeEventListener("layoutLoaded", this.layoutLoaded)
     },
     methods: {
-        updateSVG(){
+        layoutLoaded(event: Event) {
+            const customEvent = event as CustomEvent
+            // traverse up the DOM tree to check the id of parent with classname layout-wrapper
+            let parent = this.$el.parentElement
+            while (parent) {
+                if (parent.classList.contains("layout-wrapper")) {
+                    break
+                }
+                parent = parent.parentElement
+            }
+            if (!parent) {
+                return
+            }
+
+            if (customEvent.detail?.id === parent.id) {
+                this.updateSVG(true)
+            }
+        },
+        updateSVG(fadeIn = true) {
             let size = "small"
             if (window.innerWidth > 960) {
                 size = "medium"
@@ -81,43 +99,52 @@ export default defineComponent ({
             }
 
             targetEL.appendChild(svg)
-
-            setTimeout(() => {
-                const v0 = this.$el.querySelector("rect[v='0']")
-                const v1 = this.$el.querySelector("rect[v='1']")
-                if (!v0 || !v1) {
+            console.log("UPDATE svg", fadeIn)
+            if (fadeIn) {
+                if (this.fadingIn) {
                     return
                 }
-
-                const colorV1 = window.getComputedStyle( v1 ).fill
-                const colorV0 = window.getComputedStyle( v0).fill
-                const rects = this.$el.querySelectorAll("rect")
-                let res = _.map(rects, rect => {
-                    const val = parseInt(rect.getAttribute("v"), 10)
-                    rect.setAttribute("v", "0")
-                    return {
-                        el: rect,
-                        v:  val,
-                    }
-                })
-
-                res = _.shuffle(res)
-                _.each(res, (obj, i) => {
-                    let color = colorV0
-                    if (obj.v === 1) {
-                        color = colorV1
+                this.fadingIn = true
+                setTimeout(() => {
+                    const v0 = this.$el.querySelector("rect[v='0']")
+                    const v1 = this.$el.querySelector("rect[v='1']")
+                    if (!v0 || !v1) {
+                        return
                     }
 
-                    gsap.to(obj.el, {
-                        duration:.54,
-                        delay: 0.0032*i,
-                        fill: color,
-                        onComplete: () => {
-                            obj.el.setAttribute("v", obj.v.toString())
+                    const colorV1 = window.getComputedStyle( v1 ).fill
+                    const colorV0 = window.getComputedStyle( v0).fill
+                    const rects = this.$el.querySelectorAll("rect")
+                    let res = _.map(rects, rect => {
+                        const val = parseInt(rect.getAttribute("v"), 10)
+                        rect.setAttribute("v", "0")
+                        return {
+                            el: rect,
+                            v:  val,
                         }
                     })
+
+                    res = _.shuffle(res)
+                    _.each(res, (obj, i) => {
+                        let color = colorV0
+                        if (obj.v === 1) {
+                            color = colorV1
+                        }
+
+                        gsap.to(obj.el, {
+                            duration:.54,
+                            delay: 0.4 + 0.0032*i,
+                            fill: color,
+                            onComplete: () => {
+                                obj.el.setAttribute("v", obj.v.toString())
+                            }
+                        })
+                    })
+                    setTimeout(() => {
+                        this.fadingIn = false
+                    }, (res.length * 0.0032 + 0.54 + 0.4) * 1000)
                 })
-            })
+            }
         }
     }
 })
@@ -133,6 +160,9 @@ export default defineComponent ({
 
     svg {
         height: 80px;
+        rect[v="0"] {
+            fill: transparent;
+        }
     }
 }
 
