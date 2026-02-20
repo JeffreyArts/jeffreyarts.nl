@@ -1,7 +1,5 @@
 <template>
     <div class="layout-wrapper">
-
-        <!-- firstLoad: {{ firstLoad }} -->
         <section  class="layout"
             :class="{
                 '__isLoaded': loaded,
@@ -11,7 +9,6 @@
             :layout-size="options.layoutSize"
             :layout-gap="options.layoutGap">
             
-            <!-- <div class="layout-loader"> -->
             <div class="layout-loader" v-if="!loaded || processing">
                 <h6>Loading...</h6>
                 <span v-if="!processing">
