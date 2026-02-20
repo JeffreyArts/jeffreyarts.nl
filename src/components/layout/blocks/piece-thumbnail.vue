@@ -6,11 +6,11 @@
             </figure>
 
             <section v-if="options.piece.type === 'youtube'" class="piece-thumbnail-block-youtube-wrapper">
-                <iframe 
-                :style="`aspect-ratio: ${ratio}; pointer-events:none;`"
-                :src="src"
-                frameborder="0" 
-                ref="youtube"/>
+                <div :style="`aspect-ratio: ${ratio}; pointer-events:none; background-image: url(${src});`"></div>
+                <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 800 800">
+                    <path style="fill: #f61c0d;" d="M633.85,116.95H166.15C74.39,116.95,0,191.34,0,283.1v233.8c0,91.76,74.39,166.15,166.15,166.15h467.7c91.76,0,166.15-74.39,166.15-166.15v-233.8c0-91.76-74.39-166.15-166.15-166.15Z"/>
+                    <path style="fill: #fff;" d="M521.48,411.38l-218.76,104.33c-5.83,2.78-12.56-1.47-12.56-7.93v-215.19c0-6.55,6.91-10.79,12.75-7.83l218.76,110.86c6.5,3.3,6.39,12.62-.19,15.76Z"/>
+                </svg>
             </section>
                 
             <section v-if="options.piece.type === 'code'" class="piece-thumbnail-block-code-wrapper">
@@ -192,7 +192,9 @@ export default defineComponent ({
                     src += imageProperties.sizes[this.imageSize].url
                 }
             } else if (this.options.piece.type === "youtube") {
-                src = this.options.piece.youtubeProperties.url
+                const urlSections = this.options.piece.youtubeProperties.url.split("/")
+                const videoId = urlSections[urlSections.length - 1]
+                src = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
             } else if (this.options.piece.type === "iframe") {
 
                 let imageProperties = this.options.piece.iframeProperties.image //? this.options.piece.imageProperties.image : this.options.piece.imageProperties
@@ -390,8 +392,16 @@ export default defineComponent ({
 }
 
 .piece-thumbnail-block-youtube-wrapper {
-    iframe {
+    div {
         width: 100%;
+        background-size: cover;
+    }
+    svg {
+        height: 80px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
     }
 }
 
