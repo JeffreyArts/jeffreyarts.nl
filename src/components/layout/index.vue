@@ -228,9 +228,9 @@ export default defineComponent ({
 
             // Sort by position
             this.newBlocks.sort((a, b) => { 
-                if (a.position?.position === undefined) return 1;
-                if (b.position?.position === undefined) return -1;
-                return a.position.position - b.position.position;
+                if (a.block?.position === undefined) return 1;
+                if (b.block?.position === undefined) return -1;
+                return a.block.position - b.block.position;
             });
 
             // Set all the correct dimensions
