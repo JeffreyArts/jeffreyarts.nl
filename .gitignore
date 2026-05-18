@@ -32,3 +32,6 @@ gsap-bonus.tgz
 *.log
 .vite-ssg-temp
 src/routes/*.json
+
+deploy.zip
+public/sitemap.xml

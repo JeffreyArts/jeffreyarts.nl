@@ -64,15 +64,43 @@ const generateRoutes = async (url, filename) => {
         
         console.log(`${bold(result.length)} routes found for '${bold(filename)}' and added to '${filePath}'`)
     } catch (error) {
-        console.error("Error fetching data:", error.message)
+        console.error("Error fetching data:", error)
     }
 }
 
 // Call the function with the API URL
 if (apiUrl) {
-    generateRoutes(`${apiUrl}/pages?limit=9999`, "pages")
-    generateRoutes(`${apiUrl}/pieces?limit=9999`, "pieces")
-    generateRoutes(`${apiUrl}/projects?limit=9999`, "projects")
+    
+    const pageRoutes = await generateRoutes(`${apiUrl}/pages?limit=9999`, "pages")
+    const pieceRoutes = await generateRoutes(`${apiUrl}/pieces?limit=9999`, "pieces")
+    const projectRoutes = await generateRoutes(`${apiUrl}/projects?limit=9999`, "projects")
+
+    const sitemap = []
+
+    // read ./routes/*.json and add all paths to sitemap
+    const routesDir = path.join(__dirname, "routes")
+    const files = ['./pages.json', './pieces.json', './projects.json']
+
+    files.forEach(file => {
+        const filePath = path.join(routesDir, file)
+        const data = JSON.parse(fs.readFileSync(filePath, "utf8"))
+        data.forEach(route => {
+            sitemap.push(route.path)
+        })
+    })
+    
+    // Write sitemap to public folder on server start
+        const sitemapPath = path.resolve(process.cwd(), "public", "sitemap.xml")
+        let content = `<?xml version="1.0" encoding="UTF-8"?>\r\n\t<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`
+
+        content += sitemap.map(route => `
+        <url>
+            <loc>${clientUrl}${route}</loc>
+        </url>`).join("")
+
+        content += `</urlset>`
+        fs.writeFileSync(sitemapPath, content)
+    
 } else {
     console.error("API URL is not defined in the .env file.")
 }
