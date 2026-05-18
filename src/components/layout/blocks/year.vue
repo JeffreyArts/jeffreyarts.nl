@@ -99,7 +99,6 @@ export default defineComponent ({
             }
 
             targetEL.appendChild(svg)
-            console.log("UPDATE svg", fadeIn)
             if (fadeIn) {
                 if (this.fadingIn) {
                     return
