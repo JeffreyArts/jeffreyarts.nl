@@ -3,6 +3,8 @@ import { createApp } from "vue"
 import router from "./routes"
 import { createPinia } from "pinia"
 import { createHead } from "@unhead/vue/client"
+import { CanonicalPlugin } from 'unhead/plugins'
+
 import Physics from "./services/physics"
 
 // Locale i18n packages
@@ -54,7 +56,14 @@ const app = createApp(App)
 app.config.globalProperties.$text  = $text
 
 Physics.start(router)
-const head = createHead()
+
+const head = createHead({
+    plugins: [
+        CanonicalPlugin({
+            canonicalHost: import.meta.env.VITE_CLIENT_URL
+        })
+    ]
+})
 
 app.use(router)
     .use(i18n)
