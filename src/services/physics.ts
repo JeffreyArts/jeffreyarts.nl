@@ -224,7 +224,7 @@ const PhysicsService = {
         }
     },
     mouseDownEvent(e:MouseEvent | TouchEvent) {
-        e.stopPropagation() 
+        // e.stopPropagation() 
         if (!PhysicsService.physics) {
             return
         }

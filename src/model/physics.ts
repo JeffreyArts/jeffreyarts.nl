@@ -11,11 +11,22 @@ export type PhysicsBlock = {
     composite?: Matter.Composite
 }
 
+export type PhysicsPolygon = {
+    id: string
+    points: { x: number; y: number }[]
+    composite: Matter.Composite
+}
+
+// Exported so other modules (e.g. PolygonDrawer) can draw on the same
+// Paper project without calling Paper.setup() a second time.
+export let paperScope: paper.PaperScope | null = null
+
 export default class Physics {
     private anchorOffset = 8
     private layoutWidth: number
     private layoutHeight: number
     public blocks: Array<PhysicsBlock>
+    public polygons: Array<PhysicsPolygon> = []
     private ceiling: Matter.Body
     private ground: Matter.Body
     public engine: Matter.Engine
@@ -29,6 +40,7 @@ export default class Physics {
         this.layoutWidth = window.innerWidth
         this.layoutHeight = window.innerHeight
         this.blocks = []
+        this.polygons = []
 
         const domEl = document.createElement("canvas")
         domEl.id = "physics"
@@ -38,8 +50,11 @@ export default class Physics {
         paperEl.width = window.innerWidth
         paperEl.height = window.innerHeight
 
-        // Paper.view.viewSize.width = width
         Paper.setup(paperEl)
+
+        // Expose the active PaperScope so other modules can share the same
+        // Paper project without calling setup() again.
+        paperScope = Paper
 
         // Parse the query string
         const urlParams = new URLSearchParams(window.location.search);
@@ -50,7 +65,8 @@ export default class Physics {
 
         document.body.appendChild(domEl)
         document.body.appendChild(paperEl)
-        // Set-up the physics enginge
+
+        // Set-up the physics engine
         this.engine = Matter.Engine.create(),
         this.render = Matter.Render.create({
             canvas: domEl,
@@ -260,7 +276,6 @@ export default class Physics {
             }
         })
 
-        
         // Compose the composite
         const blockComposite = Matter.Composite.create({label: "block"})
         Matter.Composite.add(blockComposite, [block])
@@ -279,6 +294,7 @@ export default class Physics {
             composite: blockComposite
         })
     }
+
     clearBlocks() {
         this.blocks.forEach(block => {
             if (block.composite) {
@@ -306,5 +322,124 @@ export default class Physics {
         })
         this.blocks = []
     }
-}
 
+    // ─── Polygon methods ───────────────────────────────────────────────────────
+
+    /**
+     * Build a Matter.js Composite from a closed polygon defined by screen-space
+     * points.  The body uses fromVertices so it works with any convex or (via
+     * decomp) concave shape.  It is static so it acts as a solid collider.
+     */
+    addPolygon(id: string, points: { x: number; y: number }[]): PhysicsPolygon | null {
+        if (points.length < 3) return null
+
+        // Remove existing polygon with same id first
+        this.removePolygon(id)
+
+        // Matter.Bodies.fromVertices needs a centre position + vertex list.
+        // We compute the centroid ourselves so the body lands exactly on the
+        // drawn shape without any offset surprise.
+        const cx = points.reduce((s, p) => s + p.x, 0) / points.length
+        const cy = points.reduce((s, p) => s + p.y, 0) / points.length
+
+        const vertices = points.map(p => ({ x: p.x, y: p.y }))
+
+        const body = Matter.Bodies.fromVertices(cx, cy, [vertices], {
+            label: "polygon",
+            isStatic: true,
+            collisionFilter: {
+                category: 0x0001,
+                mask: 0x0001 | 0x0002
+            },
+            // Keep the body visually clean in wireframe/dev mode
+            render: {
+                fillStyle: "#ffffff22",
+                strokeStyle: "#ffffff",
+                lineWidth: 1
+            }
+        }, true) // true = flagInternal, removes internal edges from decomposed shapes
+
+        if (!body) return null
+
+        // fromVertices may shift the body centre after decomposition — realign
+        Matter.Body.setPosition(body, { x: cx, y: cy })
+
+        const composite = Matter.Composite.create({ label: `polygon:${id}` })
+        Matter.Composite.add(composite, body)
+        Matter.World.add(this.engine.world, composite)
+
+        const polygon: PhysicsPolygon = { id, points, composite }
+        this.polygons.push(polygon)
+        return polygon
+    }
+
+    /**
+     * Replace the vertex data of an existing polygon body in-place.
+     * Called while the user drags an anchor point in the editor.
+     */
+    updatePolygon(id: string, points: { x: number; y: number }[]): void {
+        if (points.length < 3) return
+
+        const existing = this.polygons.find(p => p.id === id)
+        if (!existing) {
+            // Not yet registered — create it fresh
+            this.addPolygon(id, points)
+            return
+        }
+
+        // Update stored points
+        existing.points = points
+
+        // Remove old body from composite and world
+        const oldBodies = [...existing.composite.bodies]
+        oldBodies.forEach(b => Matter.Composite.remove(existing.composite, b))
+
+        // Build new body
+        const cx = points.reduce((s, p) => s + p.x, 0) / points.length
+        const cy = points.reduce((s, p) => s + p.y, 0) / points.length
+        const vertices = points.map(p => ({ x: p.x, y: p.y }))
+
+        const newBody = Matter.Bodies.fromVertices(cx, cy, [vertices], {
+            label: "polygon",
+            isStatic: true,
+            collisionFilter: {
+                category: 0x0001,
+                mask: 0x0001 | 0x0002
+            },
+            render: {
+                fillStyle: "#ffffff22",
+                strokeStyle: "#ffffff",
+                lineWidth: 1
+            }
+        }, true)
+
+        if (!newBody) return
+
+        Matter.Body.setPosition(newBody, { x: cx, y: cy })
+        Matter.Composite.add(existing.composite, newBody)
+    }
+
+    /**
+     * Remove a single polygon by id.
+     */
+    removePolygon(id: string): void {
+        const idx = this.polygons.findIndex(p => p.id === id)
+        if (idx === -1) return
+
+        const polygon = this.polygons[idx]
+        Matter.World.remove(this.engine.world, polygon.composite)
+        Matter.Composite.clear(polygon.composite, true)
+        this.polygons.splice(idx, 1)
+    }
+
+    /**
+     * Remove all polygons from the world and clear the list.
+     */
+    clearPolygons(): void {
+        this.polygons.forEach(polygon => {
+            Matter.World.remove(this.engine.world, polygon.composite)
+            Matter.Composite.clear(polygon.composite, true)
+        })
+        this.polygons = []
+    }
+}
