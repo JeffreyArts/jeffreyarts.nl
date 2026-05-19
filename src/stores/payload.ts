@@ -1,5 +1,6 @@
 import { defineStore } from "pinia"
 import AuthModel from "@/model/payload/auth"
+import isSearchEngineCrawler from "./../check-for-bot-visit"
 import PageModel, { PageType } from "@/model/payload/page"
 import { AxiosRequestConfig, AxiosResponse } from "axios"
 import axios from "axios"
@@ -26,7 +27,11 @@ export const Payload = defineStore("payload", {
             }
 
             this.baseUrl = url
-            this.auth = new AuthModel(this.baseUrl)
+            const isBot = isSearchEngineCrawler()
+            if (!isBot.isCrawler) {
+                this.auth = new AuthModel(this.baseUrl)
+            }
+                
             this.page = new PageModel()
             this.axios = axios.create({
                 withCredentials: true,
