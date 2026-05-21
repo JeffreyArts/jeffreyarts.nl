@@ -10,7 +10,7 @@
         }" @loaded="loaded"/>
         <FilterComponent v-if="pageData?.filter?.name && showFilters" :options="pageData?.filter" :pageDetails="pageData" ref="filter" @filterUpdated="updateFilter"/>
     </section>
-
+    <MatterBox v-if="identity" :identity="identity"></MatterBox>
     <page404 v-if="is404"/>
 </template>
 
@@ -20,6 +20,7 @@ import { defineComponent } from "vue"
 import gsap from "gsap"
 import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 import {PageType} from "@/model/payload/page"
+import MatterBox from "@/components/matter-box.vue";
 
 import payloadStore from "@/stores/payload"
 import { useHead }  from "@unhead/vue"
@@ -28,7 +29,11 @@ import Breadcrumbs from "@/components/breadcrumbs.vue"
 import FilterComponent from "@/components/filter.vue"
 import Layout from "@/components/layout/index.vue"
 import page404 from "@/routes/error-404.vue"
+import Identity from "@/model/catterpillar/identity"
 import { BlockType } from "@/components/layout/layout-types"
+
+import useIdentityStore from "@/stores/identity"
+import type { IdentityType } from "@/stores/identity"
 
 const setMeta = (route: RouteLocationNormalizedLoaded) => {
     const meta = [] as Array<{
@@ -58,22 +63,29 @@ export default defineComponent ({
         Breadcrumbs,
         Layout,
         page404,
-        FilterComponent
+        FilterComponent,
+        MatterBox
     },
     props: [],
     setup() {
         const Payload = payloadStore()
         const route = useRoute()
+        const identityStore = useIdentityStore()
         const title = route.name as string
-
-       
-        return {
+        
+        return{
             Payload,
+            identityStore,
             head:  useHead({
                 title,
                 meta: setMeta(route)
             }) 
+        } as {
+            Payload: ReturnType<typeof payloadStore>,
+            identityStore: ReturnType<typeof useIdentityStore>,
+            head: ReturnType<typeof useHead>
         }
+
     },
     computed: {
         showFilters() {
@@ -92,9 +104,10 @@ export default defineComponent ({
             pageLoaded: false,
             pageSwitchIndex: 0,
             abortController: null as AbortController | null,
-            fadeOutTimeout: undefined as undefined | NodeJS.Timeout,
-            pageIsLoading: null as NodeJS.Timeout | null,
-            pageData: undefined as PageType | undefined
+            fadeOutTimeout: undefined as undefined | ReturnType<typeof setTimeout>,
+            pageIsLoading: null as ReturnType<typeof setTimeout> | null,
+            pageData: undefined as PageType | undefined,
+            identity: undefined as IdentityType | undefined
         }
     },
     watch: {
@@ -126,7 +139,15 @@ export default defineComponent ({
                 }
             }, 
             immediate: true
-        }
+        },
+        // "Payload.auth": {
+        //     handler() {
+        //         console.log("Auth state changed, updating identity", this.Payload.auth,this.Payload.auth.self)    
+        //         this.updateIdentity()
+        //     },
+        //     deep: true,
+        //     immediate: true
+        // }
     },
     mounted() {
         if (typeof window === "undefined") {
@@ -134,9 +155,11 @@ export default defineComponent ({
         }
         gsap.registerPlugin(ScrollToPlugin);
 
+        window.addEventListener("addCatterpillar", this.updateIdentity)
         window.addEventListener("resize", this.updateLayoutSize)
     },
     unmounted() {
+        window.removeEventListener("addCatterpillar", this.updateIdentity)
         window.removeEventListener("resize", this.updateLayoutSize)
     },
     methods: {
@@ -251,8 +274,23 @@ export default defineComponent ({
             const size = `size_${this.breakpoint}` as "size_xs" | "size_s" | "size_m" | "size_l" | "size_xl" 
             this.layoutSize = this.pageData.layout[size]
         },
-        updateFilter() {
-            // Doe dingen ?
+        updateIdentity() {
+            console.log("Updating identity in default template", this.Payload.auth?.self?.catterpillar)
+            if (this.Payload.auth && this.Payload.auth.self) {
+                const catterpillar = this.Payload.auth.self.catterpillar
+                if (!catterpillar) return 
+                            
+                this.identity = {
+                    id: this.Payload.auth.self.id,
+                    name: this.Payload.auth.self.username,
+                    textureIndex: catterpillar.textureIndex, // 0-1023 | this.Payload.auth.self.catterpillar.textureIndex
+                    colorSchemeIndex: catterpillar.colorSchemeIndex, // 0-1023 | this.Payload.auth.self.catterpillar.colorSchemeIndex
+                    offset: catterpillar.offset, // 0-15 | this.Payload.auth.self.catterpillar.offset  
+                    gender: Math.floor(Math.random() * 2), 
+                    length: catterpillar.length,             // 0-31
+                    thickness: catterpillar.thickness          // 0-63
+                }
+            }
         }
     }
 })
