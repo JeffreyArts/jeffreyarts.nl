@@ -54,7 +54,6 @@ export class Catterpillar {
     isDead: boolean = false
     isDestroyed: boolean = false
     isTalking: boolean = false
-    isOnSolidGround: boolean = false
     
     speechBubble: undefined | SpeechBubble
 
@@ -145,10 +144,20 @@ export class Catterpillar {
         requestAnimationFrame(this.#loop.bind(this))
     }
 
-    #inTouchWithEarth() {
-        const headCollisions = Matter.Query.collides(this.head.body, this.world.bodies.filter(b => b.isStatic))
-        const buttCollisions = Matter.Query.collides(this.butt.body, this.world.bodies.filter(b => b.isStatic))
+    get isOnSolidGround() {
+        const headCollisions = this.touchingSolidGround(this.head.body)
+        const buttCollisions = this.touchingSolidGround(this.butt.body)
+        
         return (headCollisions.length > 0 && buttCollisions.length > 0) 
+    }
+
+    private touchingSolidGround(body: Matter.Body) {
+        return Matter.Query.collides(body, this.world.bodies.filter(b => {
+            const isStatic = b.isStatic
+            const isAboveGround = body.position.y < b.bounds.min.y
+            const isBelowGround = body.position.y > b.bounds.max.y
+            return isStatic && isAboveGround && !isBelowGround
+        }))
     }
 
     #loop() {
@@ -160,9 +169,6 @@ export class Catterpillar {
         const centerIndex = Math.round(this.bodyParts.length / 2)
         this.x = this.bodyParts[centerIndex].body.position.x
         this.y = this.bodyParts[centerIndex].body.position.y
-
-        // Set isOnSolidGround
-        this.isOnSolidGround = this.#inTouchWithEarth()
 
 
         // SETTING OFFSETS
@@ -483,9 +489,9 @@ export class Catterpillar {
             // Stick butt to ground via a constraint
             const buttConstraint = Matter.Constraint.create({
                 bodyA: this.butt.body,
-                pointB: { x: this.butt.body.position.x, y: this.butt.body.position.y },
+                pointB: { x: this.butt.body.position.x, y: this.butt.body.position.y},
                 length: 0,
-                stiffness: .3,
+                stiffness: .1,
                 label: "buttConstraint",
                 render: {
                     visible: this.dev,
@@ -503,11 +509,8 @@ export class Catterpillar {
                 buttConstraint,
             }
 
-
-
             // Start contraction via GSAP tween
             const obj = { ...this.spine, perc, buttX: Math.abs(this.butt.body.position.x - this.head.body.position.x) }
-
             this.spine.stiffness = .5
             this.contraction.contractionTween = gsap.to(obj, {
                 length: newLength,
@@ -516,9 +519,9 @@ export class Catterpillar {
                 ease:  "linear",
                 buttX: obj.buttX - newLength/2,
                 onUpdate: () => {
-                    if (!this.contraction) {
-                        this.contraction.contractionTween.kill()
-                        return
+                    if (!this.touchingSolidGround(this.head.body)) {
+                        this.releaseSpine()
+                        return reject()
                     }
 
                     this.spine.length = obj.length
@@ -552,16 +555,22 @@ export class Catterpillar {
                     this.bodyParts.forEach((bp, index) => {
                         const centerIndex = this.#calculateLength() / 2
                         const distanceFromCenter = centerIndex - Math.abs(index - centerIndex)
-                        
+                        let yForce = distanceFromCenter * -maxVelocity
+                        if (index == this.length - 1) {
+                            yForce = -.1
+                        }
                         // change Y velocity to simulate bounce
-                        Matter.Body.applyForce( bp.body,bp.body.position, {
+                        Matter.Body.applyForce( bp.body, bp.body.position, {
                             // x: (this.head.position.x - this.butt.position.x),
                             x: 0,
-                            y: distanceFromCenter * -maxVelocity,
+                            y: yForce,
                         })
+
                     })
                 },
                 onComplete: () => {
+                    if (!this.contraction) return
+
                     this.contraction.tickerFn = () => {
                         const centerIndex = this.bodyParts.length / 2
                         let maxVelocity = .48 - (this.length * 2) / 100

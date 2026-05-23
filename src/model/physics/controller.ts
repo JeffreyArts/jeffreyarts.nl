@@ -100,7 +100,7 @@ export class MatterController {
     #loop() {
         const width = this.ref.renderer.options.width || 0
         const height = this.ref.renderer.options.height || 0
-        if (this.catterpillar.y > height ) {
+        if (this.catterpillar.y > height || this.catterpillar.y < - 300 || this.catterpillar.x < -300 || this.catterpillar.x > width + 300) {
             // Re-center Catterpillar
             this.catterpillar.destroy()
             this.createCatterpillar({ x: width / 2, y: 0}, { identity: this.identity })  
