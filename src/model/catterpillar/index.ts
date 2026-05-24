@@ -827,6 +827,7 @@ export class Catterpillar {
         if (!this.moveTowardsPoint) {
             return
         }
+
         const xd = Math.abs(this.moveTowardsPoint.x - this.head.x)
         this.leftEye.lookAt(this.moveTowardsPoint, .5)
         this.rightEye.lookAt(this.moveTowardsPoint, .5)

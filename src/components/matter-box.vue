@@ -12,42 +12,19 @@
 <script lang="ts">
 import {defineComponent, type PropType} from "vue"
 import { MatterController } from "@/model/physics/controller"
-import { textureInterface } from "@/assets/default-textures"
 import { gsap } from "gsap"
 import _ from "lodash"
 import jaoIcon from "./jao-icon.vue"
 
 import useStoryStore from "@/stores/story";
 import useIdentityStore from "@/stores/identity"
-
-type currentIdentity = {
-    id: number
-    name: string
-    gender: number // 0-1
-    primaryColor: string
-    secondaryColor: string
-    textureIndex: number;       // 0-1023
-    colorSchemeIndex: number;   // 0-1023
-    offset: number
-    texture: textureInterface
-    origin: string
-    age: number,
-    created: number,
-    death: number | undefined
-    length: number
-    thickness: number
-    cooldown: number
-    hunger: number
-    joy: number
-    love: number
-    defaultState?: "happy" | "sad" | "hmm"
-}
+import { type IdentityField } from "@/model/catterpillar/identity"
 
 
 export default defineComponent ({ 
     props: {
         identity: {
-            type: Object as PropType<currentIdentity>,
+            type: Object as PropType<IdentityField>,
                 required: true
             }
         },
@@ -62,13 +39,6 @@ export default defineComponent ({
             }
         },
         watch: {
-            // "identity.defaultState"(newVal, oldVal) {
-            //     if (!newVal || !this.controller) {
-            //         return
-            //     }
-            //     this.controller.catterpillar.defaultState = newVal
-            //     this.controller.catterpillar.emote(newVal)
-            // },
             "identity.id": {
                 handler() {
                     this.addCatterpillar()

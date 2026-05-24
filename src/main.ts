@@ -4,9 +4,6 @@ import router from "./routes"
 import { createPinia } from "pinia"
 import { createHead } from "@unhead/vue/client"
 import { CanonicalPlugin } from 'unhead/plugins'
-import isSearchEngineCrawler from "./check-for-bot-visit"
-
-// import Physics from "./services/physics"
 
 // Locale i18n packages
 import { createI18n } from "vue-i18n"

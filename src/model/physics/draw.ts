@@ -71,10 +71,35 @@ type TwoPath = InstanceType<typeof Two.Path>
 type TwoTexture = InstanceType<typeof Two.Texture>
 
 
+export interface PolygonObjectModel {
+    type: "polygon";
+    id: string;
+    showAnchors: boolean;
+    model: Polygon | null;
+    two: { 
+        path: TwoPath
+        anchors: TwoCircle[]
+    } | null;
+}
+
+interface PolygonPreviewObjectModel {
+    type: "polygonPreview"
+    id: string
+    model?: {
+        points: { x: number; y: number }[]
+        mousePos: { x: number; y: number }
+        color: string
+    }
+    two: {
+        path: TwoPath
+        snapIndicator: TwoCircle
+    } | null
+}
+
 interface EyeObjectModel {
     type: "eye";
     id: string;
-    model: Eye;
+    model: Eye | null;
     two: { group: TwoGroup; pupil: TwoCircle; lid: TwoPath };
 }
 
@@ -107,7 +132,7 @@ interface SpeechBubbleObjectModel {
 export class Draw {
     two: Two
     layers: TwoGroup[] = []
-    objects: Array<CatterpillarObjectModel | SpeechBubbleObjectModel> = []
+    objects: Array<CatterpillarObjectModel | SpeechBubbleObjectModel | PolygonObjectModel | PolygonPreviewObjectModel> = []
     renderer?: Matter.Render | undefined
 
     constructor(two: Two, renderer?: Matter.Render) {
@@ -119,6 +144,10 @@ export class Draw {
             this.two.add(layer)
         }
         requestAnimationFrame(this.#draw.bind(this))
+    }
+
+    get previewObj(): PolygonPreviewObjectModel | undefined {
+        return this.objects.find(o => o.type === "polygonPreview") 
     }
 
     #draw() {
@@ -143,6 +172,14 @@ export class Draw {
                 if (!this.drawSpeechBubble(obj)) {
                     this.#removeSpeechBubble(obj)
                     this.objects = this.objects.filter(o => o.id !== obj.id)
+                }
+            } else if (obj.type == "polygon") {
+                if (!this.drawPolygon(obj)) {
+                    this.#removePolygon(obj)
+                }
+            } else if (obj.type == "polygonPreview") {
+                if (!this.drawPolygonPreview(obj)) {
+                    this.#removePolygonPreview(obj)
                 }
             }
         })
@@ -247,7 +284,68 @@ export class Draw {
 
 
     // ADD METHODS
+    addPolygon = (polygon: Polygon, layerIndex = 10) => {
+        const layer = this.layers[layerIndex]
 
+        const anchors = polygon.points.map(p => new Two.Anchor(p.x, p.y))
+        const path = new Two.Path(anchors, true, false)
+        path.stroke = polygon.color
+        path.linewidth = 2
+        path.fill = polygon.color + "38"
+
+        const anchorCircles = polygon.points.map(p => {
+            const circle = new Two.Circle(p.x, p.y, 6)
+            circle.fill = polygon.color
+            circle.stroke = '#ffffff'
+            circle.linewidth = 1.5
+            circle.opacity = 0
+            layer.add(circle)
+            return circle
+        })
+
+        const obj = {
+            type: "polygon",
+            id: polygon.id,
+            showAnchors: false,
+            model: polygon,
+            two: { path, anchors: anchorCircles },
+        } as PolygonObjectModel
+
+        layer.add(path)
+        this.objects.push(obj)
+
+        return obj
+    }
+
+    addPolygonPreview = (points: { x: number; y: number }[], mousePos: { x: number; y: number }, color: string, layerIndex = 10) => {
+        const layer = this.layers[layerIndex]
+
+        const allPoints = [...points, mousePos]
+        const anchors = allPoints.map(p => new Two.Anchor(p.x, p.y))
+        const path = new Two.Path(anchors, false, false)
+        path.stroke = Chroma.mix(color, '#ffffff', 0.5).hex()
+        path.linewidth = 1.5
+        path.fill = 'transparent'
+        path.dashes = [6, 4]
+
+        const snap = new Two.Circle(points[0].x, points[0].y, 17.5)
+        snap.noFill()
+        snap.stroke = Chroma.mix(color, '#ffffff', 0.25).hex()
+        snap.linewidth = 1.5
+        snap.opacity = 0
+
+        layer.add(path)
+        layer.add(snap)
+
+        const previewObj = {
+            type: "polygonPreview",
+            id: "polygon-preview",
+            model: { points, mousePos, color },
+            two: { path, snapIndicator: snap }
+        } as PolygonPreviewObjectModel
+
+        this.objects.push(previewObj)
+    }
 
     addCatterpillar = async (catterpillar: CatterpillarModel, layerIndex = 10) => {
         const layer = this.layers[layerIndex]
@@ -401,7 +499,6 @@ export class Draw {
         this.objects.push(catterpillarObj)
     }
 
-
     addEye = ( eye: Eye, layerIndex = 10 ) => {
         const layer = this.layers[layerIndex]
 
@@ -517,8 +614,71 @@ export class Draw {
 
 
     // DRAW METHODS
+    drawPolygon = (polygon: PolygonObjectModel) => {
+        if (!polygon.model || polygon.model.isDestroyed || !polygon.two) {
+            return false
+        }
 
+        const body = polygon.model.body
 
+        const verts = body.vertices
+
+        while (polygon.two.path.vertices.length < verts.length) {
+            polygon.two.path.vertices.push(new Two.Anchor(0, 0))
+        }
+        while (polygon.two.path.vertices.length > verts.length) {
+            polygon.two.path.vertices.pop()
+        }
+
+        verts.forEach((v, i) => {
+            polygon.two!.path.vertices[i].x = v.x
+            polygon.two!.path.vertices[i].y = v.y
+        })
+
+        polygon.two.path.stroke = polygon.model.color
+        polygon.two.path.fill = polygon.model.color + "38"
+
+        polygon.two.anchors.forEach((circle, i) => {
+            if (polygon.model) circle.fill = polygon.model.color
+            circle.position.set(verts[i]?.x ?? 0, verts[i]?.y ?? 0)
+            circle.opacity = polygon.showAnchors ? 1 : 0
+        })
+
+        return true
+    }
+
+    drawPolygonPreview = (preview: PolygonPreviewObjectModel): boolean => {
+        if (!preview.model || !preview.two) return false
+
+        const bounds = this.renderer?.bounds
+        const offsetX = bounds?.min.x ?? 0
+        const offsetY = bounds?.min.y ?? 0
+
+        const { points, mousePos, color } = preview.model
+        const allPoints = [...points, mousePos]
+        const path = preview.two.path
+        const snap = preview.two.snapIndicator
+
+        while (path.vertices.length < allPoints.length) {
+            path.vertices.push(new Two.Anchor(0, 0))
+        }
+        while (path.vertices.length > allPoints.length) {
+            path.vertices.pop()
+        }
+        allPoints.forEach((p, i) => {
+            path.vertices[i].x = p.x - offsetX
+            path.vertices[i].y = p.y - offsetY
+        })
+
+        path.stroke = Chroma.mix(color, '#ffffff', 0.5).hex()
+
+        snap.position.set(points[0].x - offsetX, points[0].y - offsetY)
+        snap.stroke = Chroma.mix(color, '#ffffff', 0.25).hex()
+        const distToFirst = Math.hypot(mousePos.x - points[0].x, mousePos.y - points[0].y)
+        snap.opacity = points.length >= 3 && distToFirst < 17.5 ? 1 : 0
+
+        return true
+    }
 
     drawCatterpillar = (catterpillar: CatterpillarObjectModel) => {
         if (!catterpillar.model || catterpillar.model.isDestroyed) {
@@ -648,6 +808,30 @@ export class Draw {
 
 
     // REMOVE METHODS
+
+    #removePolygon(polygonObj: PolygonObjectModel) {
+        if (!polygonObj) return
+        if (polygonObj.type != "polygon") { console.error("Invalid objectModel for #removePolygon"); return }
+        if (!polygonObj.two) return
+
+        polygonObj.two.path.remove()
+        polygonObj.two.anchors.forEach(a => a.remove())
+
+        this.objects = this.objects.filter(o => o.id !== polygonObj.id)
+        polygonObj.two = null
+
+        if (polygonObj.model) {
+            polygonObj.model.destroy()
+        }
+    }
+
+    #removePolygonPreview(preview: PolygonPreviewObjectModel) {
+        if (!preview.two) return
+        preview.two.path.remove()
+        preview.two.snapIndicator.remove()
+        preview.two = null
+        this.objects = this.objects.filter(o => o.id !== preview.id)
+    }
 
     #removeCatterpillar(catterpillarObj: CatterpillarObjectModel) {
         if (!catterpillarObj) return 

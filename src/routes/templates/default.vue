@@ -29,11 +29,10 @@ import Breadcrumbs from "@/components/breadcrumbs.vue"
 import FilterComponent from "@/components/filter.vue"
 import Layout from "@/components/layout/index.vue"
 import page404 from "@/routes/error-404.vue"
-import Identity from "@/model/catterpillar/identity"
 import { BlockType } from "@/components/layout/layout-types"
 
 import useIdentityStore from "@/stores/identity"
-import type { IdentityType } from "@/stores/identity"
+import { type IdentityField } from "@/model/catterpillar/identity"
 
 const setMeta = (route: RouteLocationNormalizedLoaded) => {
     const meta = [] as Array<{
@@ -107,7 +106,7 @@ export default defineComponent ({
             fadeOutTimeout: undefined as undefined | ReturnType<typeof setTimeout>,
             pageIsLoading: null as ReturnType<typeof setTimeout> | null,
             pageData: undefined as PageType | undefined,
-            identity: undefined as IdentityType | undefined
+            identity: undefined as IdentityField | undefined
         }
     },
     watch: {

@@ -10,6 +10,7 @@ import { Wall } from "./create/wall"
 import { Catterpillar } from "./create/catterpillar"
 import CatterpillarModel from "@/model/catterpillar"
 import type { IdentityField } from "@/model/catterpillar/identity"
+
 type Listener = { type: string; fn: (...args: any[]) => void }
 
 export class MatterController {
