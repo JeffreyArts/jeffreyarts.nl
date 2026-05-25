@@ -22,7 +22,7 @@ export class Polygon {
 
         this.composite = Matter.Composite.create({ label: `polygon,${this.id}` })
 
-        this.#createBody()
+        this.body = this.#createBody()
 
         Matter.World.add(this.world, this.composite)
     }
@@ -32,7 +32,7 @@ export class Polygon {
         const cx = this.points.reduce((s, p) => s + p.x, 0) / this.points.length
         const cy = this.points.reduce((s, p) => s + p.y, 0) / this.points.length
 
-        this.body = Matter.Bodies.rectangle(cx, cy, 1, 1, {
+        const body = Matter.Bodies.rectangle(cx, cy, 1, 1, {
             label: "polygon",
             isStatic: true,
             collisionFilter: collisionWall,        
@@ -45,10 +45,11 @@ export class Polygon {
             }
         })
 
-        Matter.Body.setVertices(this.body, verts)
-        Matter.Body.setPosition(this.body, { x: cx, y: cy })
+        Matter.Body.setVertices(body, verts)
+        Matter.Body.setPosition(body, { x: cx, y: cy })
 
-        Matter.World.add(this.world, this.body)
+        Matter.World.add(this.world, body)
+        return body
     }
 
     updatePoints = (points: { x: number; y: number }[]) => {

@@ -1,6 +1,5 @@
 import { jwtDecode } from "jwt-decode"
 import axios, { AxiosError, AxiosResponse, AxiosRequestConfig, AxiosInstance } from "axios"
-import PhysicsService from "@/services/physics"
 import { CatterpillarOptions } from "@/model/catterpillar"
 import UserModel from "./user"
 import _ from "lodash"
@@ -154,7 +153,6 @@ export class AuthModel {
 
                     this.setSelf(response.data.user, cleanDefaultPassword)
                     localStorage.setItem("authToken", JSON.stringify(response.data.token))
-                    PhysicsService.layoutHasChangedEvent()
 
                     return resolve(response)
                 }

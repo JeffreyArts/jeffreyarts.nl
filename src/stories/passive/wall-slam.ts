@@ -1,7 +1,6 @@
 import Matter from "matter-js"
 import Story from "@/stories/_base"
-import Catterpillar, { type Emote } from "@/models/catterpillar"
-import type { currentIdentity } from "@/stores/identity"
+import { type Emote } from "@/model/catterpillar"
 
 class WallSlamStory extends Story {
     type = "passive" as const
@@ -13,22 +12,29 @@ class WallSlamStory extends Story {
     
     start() {
         console.info("🦩 Wall Slam story started")
+        if (!this.controller?.catterpillar) return
         
         this.defaultState = this.controller.catterpillar.defaultState
         setTimeout(() => {
+            if (!this.controller) return
+        
             Matter.Events.on(this.controller.ref.engine, "collisionStart",this.checkForCollision)
         })
     }
     
+    get catterpillar() {
+        return this.controller?.catterpillar
+    }
  
     checkForCollision = (event: Matter.IEventCollision<Matter.Engine>) =>{
         event.pairs.forEach((pair) => {
             // Check of dit pair je head bevat
-            if (!this.controller || !this.identityStore?.current || !this.actionStore) {
+            if (!this.controller || !this.identityStore?.current) {
                 return
             }
-            const catterpillar = this.controller.catterpillar
-            const head = catterpillar.head.body
+            if (!this.catterpillar) return
+
+            const head = this.catterpillar.head.body
             if (pair.bodyA.label === head.label || pair.bodyB.label === head.label) {
 
                 // Bepaal welke body de head is en welke de ander
@@ -48,9 +54,7 @@ class WallSlamStory extends Story {
                     const currentId = this.identityStore.current?.id
                     if (!currentId) return
                     
-                    this.actionStore.add(currentId, "love", -2)
-                    this.identityStore.current.love -= 2
-                    catterpillar.defaultState = "sad"
+                    this.catterpillar.defaultState = "sad"
                     this.isHurt = true
                  
                     if (this.defaultStateTimeout) {
@@ -58,10 +62,10 @@ class WallSlamStory extends Story {
                     }
                  
                     this.defaultStateTimeout = setTimeout(() => {
-                        if (!this.controller || !this.identityStore?.current) return
+                        if (!this.controller || !this.identityStore?.current || !this.catterpillar) return
                         this.identityStore.setDefaultEmotionalState()
-                        catterpillar.defaultState = this.identityStore.current.defaultState as Emote
-                        catterpillar.emote(catterpillar.defaultState)
+                        this.catterpillar.defaultState = this.identityStore.current.defaultState as Emote
+                        this.catterpillar.emote(this.catterpillar.defaultState)
                         this.isHurt = false
                     }, 10000)
                 }
@@ -71,9 +75,11 @@ class WallSlamStory extends Story {
 
     destroy = () => {
         console.info("📕 Wall Slam story finished")
+        if (this.controller) {
+            Matter.Events.off(this.controller.ref.engine, "collisionStart",this.collisionHandler)
+        }
 
         this.isDestroyed = true
-        Matter.Events.off(this.controller.ref.engine, "collisionStart",this.collisionHandler)
 
         // Process the default story destroy
         super.destroy()

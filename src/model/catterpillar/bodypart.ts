@@ -20,7 +20,6 @@ export class BodyPart {
         slop: number,
     }
     dev: boolean
-    collisionMask: number
     type: "bodyPart" | "head" | "butt"
     world?: Matter.World
 
@@ -33,7 +32,6 @@ export class BodyPart {
             restitution?: number,
             slop?: number,
             type?: "head" | "butt",
-            // collisionMask?: number  // negative for non-colliding
         },
         world?: Matter.World
     ) {

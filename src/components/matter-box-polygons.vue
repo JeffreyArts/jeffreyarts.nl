@@ -216,7 +216,7 @@ export default defineComponent({
         },
 
         addCatterpillar() {
-            if (this.controller) {
+            if (this.controller?.catterpillar) {
                 const width = this.controller.ref.renderer.options.width || 100
                 this.controller.catterpillar.destroy()
                 this.controller.createCatterpillar({ x: width / 2, y: 0 }, { identity: this.identity })
@@ -438,8 +438,8 @@ export default defineComponent({
         onKeyDown(e: KeyboardEvent) {
             if (e.key === "Escape") {
                 if (this.polygonMode === "draw") this.cancelDraft()
-                else if (this.polygonMode === "edit") this.exitEditMode()
             }
+            
             if (e.key === "Enter" && this.polygonMode === "draw") this.confirmPolygon()
             if (e.key === 'd' && this.polygonMode === 'none') this.setMode('draw')
             if (e.key === 'e') this.setMode('edit')

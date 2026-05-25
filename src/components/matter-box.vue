@@ -101,7 +101,7 @@ export default defineComponent ({
                 })
             },
             addCatterpillar() {
-                if (this.controller) {
+                if (this.controller?.catterpillar) {
                     const width = this.controller.ref.renderer.options.width || 100
                     
                     this.controller.catterpillar.destroy()

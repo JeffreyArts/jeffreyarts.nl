@@ -3,7 +3,7 @@ import { collisionWall, collisionFood} from "@/model/physics/collisions"
 
 export class Block {
     composite: Matter.Composite
-    body: Matter.Body
+    body = undefined as Matter.Body | undefined
     world: Matter.World
     id: string
     rotation: number = 0
@@ -32,10 +32,6 @@ export class Block {
             this.id = crypto.randomUUID()
         }
 
-        // const dimensions = this.#extractDimensionsFromElement()
-        // this.x = dimensions ? dimensions.x : 0
-        // this.y = dimensions ? dimensions.y : 0
-
         // Create composite
         this.composite = Matter.Composite.create({ label: `ball,${options.id}` })
 
@@ -43,22 +39,6 @@ export class Block {
         
         const blockEl = this.el.querySelector("*")
         this.blockEl = blockEl as HTMLElement
-        
-        // Create body
-        // const body = Matter.Bodies.circle(this.x, this.y, this.size, {
-        //     label: "block",
-        //     friction: 0.1,
-        //     frictionAir: 0.001,
-        //     restitution: 0.9,
-        //     // mass: .4,
-        //     // density: .2,
-        //     render: {
-        //         fillStyle: "orange",
-        //     }
-        // })
-
-        
-        
         
         this.updateBody()
         // Matter.World.add(this.world, this.body)
@@ -87,10 +67,6 @@ export class Block {
             render: {
                 fillStyle: "orange",
             }
-            // collisionFilter: {
-            //     category: 0x0001,
-            //     mask: 0x0001 | 0x0002
-            // }
         })
 
         Matter.World.add(this.world, this.body)
@@ -111,26 +87,12 @@ export class Block {
         return this.blockEl.getBoundingClientRect().y + this.height/2
     }
 
-    // #extractDimensionsFromElement(el = this.el as HTMLElement) {
-    //     if (!el) return
-
-    //     const dimension = el.getBoundingClientRect();
-    //     const style = window.getComputedStyle(el)
-
-    //     if (el.parentElement) {
-    //         const offsetY = el.parentElement.offsetTop + el.offsetTop
-    //         const y = offsetY + parseInt(style.paddingTop)
-
-    //         const x = (dimension.x + window.scrollX) + parseInt(style.paddingLeft)
-    //         const width = dimension.width - parseInt(style.paddingLeft) - parseInt(style.paddingRight)
-    //         const height = dimension.height - parseInt(style.paddingTop) - parseInt(style.paddingBottom)
-    //         return { x, y, width, height }
-    //     }
-            
-    //     return undefined
-    // }
-
     #loop() {
+
+        if (!this.body) {
+            requestAnimationFrame(this.#loop.bind(this))
+            return
+        }
 
         if (this.body.bounds.max.x - this.body.bounds.min.x !== this.width && this.width !== 0) {
             this.updateBody() 
@@ -159,7 +121,9 @@ export class Block {
     destroy() {
         this.isDestroyed = true
         this.el.classList.remove("hasMatter")
-        Matter.World.remove(this.world, this.body)
+        if (this.body) {
+            Matter.World.remove(this.world, this.body)
+        }
     }
 }
 

@@ -8,6 +8,7 @@ import { reverse } from "lodash"
 
 import { Eye } from "@/model/catterpillar/eye"
 import { Mouth } from "@/model/catterpillar/mouth"
+import { Polygon } from "@/model/physics/polygon"
 
 
 export const availableBodyPartTextures = [
@@ -68,7 +69,6 @@ export const availableBodyPartTextures = [
 type TwoGroup = InstanceType<typeof Two.Group>
 type TwoCircle = InstanceType<typeof Two.Circle>
 type TwoPath = InstanceType<typeof Two.Path>
-type TwoTexture = InstanceType<typeof Two.Texture>
 
 
 export interface PolygonObjectModel {
@@ -99,21 +99,21 @@ interface PolygonPreviewObjectModel {
 interface EyeObjectModel {
     type: "eye";
     id: string;
-    model: Eye | null;
-    two: { group: TwoGroup; pupil: TwoCircle; lid: TwoPath };
+    model?: Eye;
+    two: { group?: TwoGroup; pupil?: TwoCircle; lid?: TwoPath };
 }
 
 interface MouthObjectModel {
     type: "mouth";
     id: string;
-    model: Mouth;
-    two: { path: TwoPath };
+    model?: Mouth;
+    two: { path?: TwoPath };
 }
 
 interface CatterpillarObjectModel {
     type: "catterpillar";
     id: number;
-    model: CatterpillarModel;
+    model?: CatterpillarModel;
     two: {
         bodyParts: Array<{ circle: TwoCircle; textures: TwoGroup[] }>;
         leftEye?: EyeObjectModel;
@@ -125,8 +125,8 @@ interface CatterpillarObjectModel {
 interface SpeechBubbleObjectModel {
     type: "speechBubble";
     id: number;
-    model: SpeechBubble;
-    two: { bubble: TwoPath; anchor: TwoPath };
+    model?: SpeechBubble;
+    two: { bubble?: TwoPath; anchor?: TwoPath };
 }
 
 export class Draw {
@@ -732,7 +732,8 @@ export class Draw {
                 catterpillar.model.speechBubble = undefined
                 return true
             }
-            const exists = this.objects.find(obj => obj.id == catterpillar.model.speechBubble.composite.id)
+            
+            const exists = this.objects.find(obj => obj.id == catterpillar.model?.speechBubble?.composite.id)
             if (exists) return true
             this.objects.push(this.addSpeechBubble(catterpillar.model.speechBubble))
         }
@@ -746,6 +747,7 @@ export class Draw {
             this.#removeEye(eye)
             return false
         }
+        if (!eye.two.group || !eye.two.lid || !eye.two.pupil) return false
 
         const lid = eye.two.lid 
         const pupil = eye.two.pupil
@@ -772,6 +774,8 @@ export class Draw {
             this.#removeMouth(mouth)
             return
         }
+
+        if (!mouthTwo.path) return
         
         mouthTwo.path.position.set(mouth.model.x, mouth.model.y)
 
@@ -791,11 +795,14 @@ export class Draw {
         const bubble = speechBubble.two.bubble
         const anchor = speechBubble.two.anchor
         
+        if (!bubble) return
         bubble.vertices.forEach((v, i) => {
+            if (!speechBubble.model) return
             v.x = speechBubble.model.bubble.outline[i].position.x
             v.y = speechBubble.model.bubble.outline[i].position.y
         })
-
+        
+        if (!anchor) return
         anchor.vertices[0].x = speechBubble.model.bubble.anchor.bodies[0].position.x
         anchor.vertices[0].y = speechBubble.model.bubble.anchor.bodies[0].position.y
         anchor.vertices[1].x = speechBubble.model.bubble.left.bodies[1].position.x
@@ -818,7 +825,6 @@ export class Draw {
         polygonObj.two.anchors.forEach(a => a.remove())
 
         this.objects = this.objects.filter(o => o.id !== polygonObj.id)
-        polygonObj.two = null
 
         if (polygonObj.model) {
             polygonObj.model.destroy()
@@ -829,7 +835,7 @@ export class Draw {
         if (!preview.two) return
         preview.two.path.remove()
         preview.two.snapIndicator.remove()
-        preview.two = null
+
         this.objects = this.objects.filter(o => o.id !== preview.id)
     }
 
@@ -853,26 +859,25 @@ export class Draw {
         // remove eyes
         if (catterpillarObj.two.leftEye) {
             this.#removeEye(catterpillarObj.two.leftEye)
-            catterpillarObj.two.leftEye = null
+            catterpillarObj.two.leftEye = undefined
         }
         if (catterpillarObj.two.rightEye) {
             this.#removeEye(catterpillarObj.two.rightEye)
-            catterpillarObj.two.rightEye = null
+            catterpillarObj.two.rightEye = undefined
         }
         
         // remove mouth 
         if (catterpillarObj.two.mouth) {
             this.#removeMouth(catterpillarObj.two.mouth)
-            catterpillarObj.two.mouth = null
+            catterpillarObj.two.mouth = undefined
         }
 
         this.objects = this.objects.filter(o => o.id !== catterpillarObj.id)
 
-        catterpillarObj.two = null
 
         if (catterpillarObj.model) {
             catterpillarObj.model.destroy()
-            catterpillarObj.model = null
+            catterpillarObj.model = undefined
         }
     }
     
@@ -881,19 +886,23 @@ export class Draw {
         if (eyeObj.type != "eye") { console.error("Invalid objectModel for #removeEye"); return }
 
         if (eyeObj.two.group) {
-            eyeObj.two.lid.remove()
-            eyeObj.two.lid = null
+            if (eyeObj.two.lid) {
+                eyeObj.two.lid.remove()
+                eyeObj.two.lid = undefined
+            }
 
-            eyeObj.two.pupil.remove()
-            eyeObj.two.pupil = null
+            if (eyeObj.two.pupil) {
+                eyeObj.two.pupil.remove()
+                eyeObj.two.pupil = undefined
+            }
 
             eyeObj.two.group.remove()
-            eyeObj.two.group = null
+            eyeObj.two.group = undefined
         }
 
         if (eyeObj.model) {
             eyeObj.model.destroy()
-            eyeObj.model = null
+            eyeObj.model = undefined
         }
     }
 
@@ -904,12 +913,12 @@ export class Draw {
 
         if (mouthObj.two.path) {
             mouthObj.two.path.remove()
-            mouthObj.two.path = null
+            mouthObj.two.path = undefined
         }
 
         if (mouthObj.model) {
             mouthObj.model.destroy()
-            mouthObj.model = null
+            mouthObj.model = undefined
         }
     }
 
@@ -919,17 +928,17 @@ export class Draw {
 
         if (speechBubble.two.bubble) {
             speechBubble.two.bubble.remove()
-            speechBubble.two.bubble = null
+            speechBubble.two.bubble = undefined
         }
         
         if (speechBubble.two.anchor) {
             speechBubble.two.anchor.remove()
-            speechBubble.two.anchor = null
+            speechBubble.two.anchor = undefined
         }
 
         if (speechBubble.model) {
             speechBubble.model.destroy()
-            speechBubble.model = null
+            speechBubble.model = undefined
         }
 
     }

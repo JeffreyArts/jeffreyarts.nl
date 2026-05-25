@@ -19,7 +19,6 @@ import Locale from "@/stores/locale"
 import gsap from "gsap"
 
 import useIdentityStore from "@/stores/identity"
-import useActionStore from "@/stores/action"
 import useStoryStore from "@/stores/story"
 
 // import { useRouter } from "vue-router"
@@ -41,11 +40,9 @@ export default defineComponent({
     setup() {
         
         const identityStore = useIdentityStore()
-        const actionStore = useActionStore()
         const storyStore = useStoryStore()
 
         storyStore.init()
-        actionStore.init()
         identityStore.init()
     },
     mounted() {
