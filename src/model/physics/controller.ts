@@ -17,8 +17,7 @@ export class MatterController {
     private listeners: Listener[] = []
     storyStore = storyStore()
     ref: MatterSetup
-    // resizeEvents: Array<Function> = []
-    catterpillar: CatterpillarModel
+    catterpillar?: CatterpillarModel
     mousePin = undefined as Matter.Constraint | undefined
     draw: Draw
     config: {
@@ -91,17 +90,19 @@ export class MatterController {
         window.addEventListener("layoutChange", this.#resizeCanvas.bind(this))
         window.addEventListener("layoutChange", this.#updateWalls.bind(this))
         
-        this.storyStore.initialised.then(async () => {
-            this.storyStore.setController(this)
-            this.storyStore.setIdentity(this.identity)
-        })
+        if (this.storyStore?.initialised) {
+            this.storyStore.initialised.then(async () => {
+                this.storyStore.setController(this)
+                this.storyStore.setIdentity(this.identity)
+            })
+        }
         
         requestAnimationFrame(this.#loop.bind(this))
     }
     #loop() {
         const width = this.ref.renderer.options.width || 0
         const height = this.ref.renderer.options.height || 0
-        if (this.catterpillar.y > height || this.catterpillar.y < - 300 || this.catterpillar.x < -300 || this.catterpillar.x > width + 300) {
+        if (this.catterpillar && (this.catterpillar.y > height || this.catterpillar.y < - 300 || this.catterpillar.x < -300 || this.catterpillar.x > width + 300)) {
             // Re-center Catterpillar
             this.catterpillar.destroy()
             this.createCatterpillar({ x: width / 2, y: 0}, { identity: this.identity })  
@@ -179,11 +180,11 @@ export class MatterController {
     }
 
     #grabCatterpillar({ x, y }: { x: number, y: number }, event: PointerEvent | MouseEvent) {
-        if (this.disableDragging) {
-            return
-        }
-        // Check if x & y Match a body part
-        this.catterpillar.bodyParts.forEach(bodyPart => {
+        if (this.disableDragging) return
+        if (!this.catterpillar) return
+
+        this.catterpillar?.bodyParts.forEach(bodyPart => {
+            if (!this.catterpillar) return
             const bounds = bodyPart.body.bounds
             if (x >= bounds.min.x && x <= bounds.max.x && y >= bounds.min.y && y <= bounds.max.y) {
                 // Create constraint and attach to body part
@@ -197,8 +198,11 @@ export class MatterController {
     }
 
     #releaseCatterpillar() {
+        if (!this.catterpillar) return
+
         this.mousePin = undefined
         this.catterpillar.pins.forEach(pin => {
+            if (!this.catterpillar) return
             const labels = pin.label.split(",")
 
             if (labels.includes("mousePin")) {
@@ -210,6 +214,7 @@ export class MatterController {
     #dragCatterpillar(mouse: { x: number, y: number }) {
         if (this.disableDragging) return
         if (!this.mousePin) return
+        if (!this.catterpillar) return
 
         const contractions = this.catterpillar?.contraction
         if (contractions) {
@@ -290,6 +295,8 @@ export class MatterController {
 
         if (name == "moveCatterpillar") {
             fn = ({ x, /* y */ }: { x: number, y: number }) => {
+                if (!this.catterpillar) return
+
                 if (this.catterpillar.isPointingLeft()) {
                     if (x < this.catterpillar.x) {
                         this.catterpillar.move()
@@ -315,9 +322,12 @@ export class MatterController {
             }
         } else if (name == "standUpCatterpillar") {
             fn = () => {
+                if (!this.catterpillar) return
+
                 this.catterpillar.standUp(0, .5)
                 let a = 0
                 const interval = setInterval(async () => {
+                    if (!this.catterpillar) return
                     if (a >= 5) {
                         clearInterval(interval)
                         this.catterpillar.releaseStance()
@@ -335,10 +345,12 @@ export class MatterController {
             }
         } else if (name == "turnAround") {
             fn = () => {
+                if (!this.catterpillar) return
                 this.catterpillar.turnAround()
             }
         }
-
+        if (!fn) return
+        
         this.ref.addClickEvent(fn, name)
     }
 
@@ -351,12 +363,25 @@ export class MatterController {
             identity = {
                 id,
                 name: "catterpillar",
-                textureIndex: identity.textureIndex,
-                colorSchemeIndex: identity.colorSchemeIndex,
+                textureIndex: Math.floor(Math.random() * 399),
+                colorSchemeIndex: Math.floor(Math.random() * 96),
                 offset: Math.floor(Math.random() * 16),
                 gender: Math.random() > 0.5 ? 1 : 0,
                 thickness: 16,
                 length: 6
+            }
+
+            if (options?.identity) {
+                if (options.identity.textureIndex) {
+                    identity.textureIndex = options.identity.textureIndex
+                }
+
+                if (options.identity.colorSchemeIndex) {
+                    identity.colorSchemeIndex = options.identity.colorSchemeIndex
+                }
+                if (options.identity.offset) {
+                    identity.offset = options.identity.offset
+                }
             }
         }
         this.identity = identity
@@ -369,6 +394,8 @@ export class MatterController {
 
         // Custom colors for the main catterpillar
         this.catterpillar.bodyParts.forEach((part, index) => {
+            if (!this.catterpillar) return
+
             if (index === 0) {
                 part.body.render.fillStyle = "tomato"
             } else if (index === this.catterpillar.bodyParts.length - 1) {

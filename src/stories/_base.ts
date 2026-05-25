@@ -1,6 +1,5 @@
 import { MatterController } from "@/model/physics/controller"
 import StoryStore from "@/stores/story"
-import actionStore from "@/stores/action"
 import identityStore from "@/stores/identity"
 
 
@@ -9,7 +8,6 @@ class Story {
     priority = "low" as "low" | "medium" | "high"
     controller: MatterController | undefined
     storyStore: ReturnType<typeof StoryStore> | undefined
-    actionStore: ReturnType<typeof actionStore> | undefined
     identityStore: ReturnType<typeof identityStore> | undefined
 
     isDestroyed: boolean = false
@@ -18,7 +16,6 @@ class Story {
     constructor(controller: MatterController, silent = false) {
         this.controller = controller
         this.storyStore = StoryStore()
-        this.actionStore = actionStore()
         this.identityStore = identityStore()
 
         // Silent is used to prevent the story from fully starting, but just initiate the stores & controller

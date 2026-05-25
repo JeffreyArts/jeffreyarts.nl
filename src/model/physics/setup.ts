@@ -7,10 +7,8 @@ export class MatterSetup {
     engine: Matter.Engine
     world: Matter.World
     renderer: Matter.Render
-    runner: Matter.Runner
     el: HTMLElement
     twoEl: HTMLCanvasElement
-    matterEl: HTMLCanvasElement
     two: Two
     devMode: boolean = false
     clickEvents: Array<{ fn: mouseEventFunction, name: string }> = []
@@ -59,12 +57,6 @@ export class MatterSetup {
         if (this.devMode) {
             Matter.Render.run(this.renderer)
         }
-        
-        // create runner
-        // this.runner = Matter.Runner.create()
-        
-        // run the engine
-        // Matter.Runner.run(this.runner, this.engine)
         
         this.engine.constraintIterations = 16
 
@@ -138,7 +130,7 @@ export class MatterSetup {
         if (this.isClicking) {
             this.clickEvents.forEach(clickEvent => {
                 if (typeof clickEvent.fn === "function") {
-                    clickEvent.fn({ x, y })
+                    clickEvent.fn({ x, y }, event)
                 }
             })
             this.isClicking = false

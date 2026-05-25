@@ -22,7 +22,7 @@ class BlocksStory extends Story {
     }
 
     loop() {
-        if (!this.controller) return
+        if (!this.controller?.catterpillar) return
 
         const catterpillar = this.controller.catterpillar
         const closestBlock = this.closestBlock
@@ -144,8 +144,6 @@ class BlocksStory extends Story {
             this.controller.ref.removepointerDownEvent("move-towards-mouse-story-update-mouse-position")
             this.controller.ref.removepointerMoveEvent("move-towards-mouse-story-update-mouse-position")
         }
-
-        this.controller = undefined
 
         // Process the default story destroy
         super.destroy()

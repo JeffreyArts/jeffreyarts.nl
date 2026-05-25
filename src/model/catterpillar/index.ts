@@ -105,7 +105,7 @@ export class Catterpillar {
         
         // Create body parts
         this.#createBodyParts()
-        this.#createSpine()
+        this.spine = this.#createSpine()
 
         const scale = this.thickness / 16
         this.mouth = new Mouth({
@@ -329,8 +329,7 @@ export class Catterpillar {
 
     #createSpine() {
         if (!this.head || !this.butt) {
-            console.error("Invalid head or butt for #createSpine");
-            return;
+            throw new Error("Head or butt not created yet")
         }
 
         this.spine = Matter.Constraint.create({
@@ -347,6 +346,7 @@ export class Catterpillar {
             }
         })
         Matter.Composite.add(this.composite, this.spine)
+        return this.spine
     }
 
     #createBodyParts() {
@@ -376,7 +376,11 @@ export class Catterpillar {
                 radius: this.thickness/2,
                 x,
                 y: this.y,
-                // collisionGroup: 1 //-1 * catterpillars.length - 1,
+            } as {
+                radius: number
+                x: number
+                y: number
+                type?: "head" | "butt"
             }
 
             if (type) {
@@ -758,6 +762,10 @@ export class Catterpillar {
                 },
                 onComplete: () => {
                     this.isStanding = true
+                    if (!this.contraction) {
+                        this.contraction = {}
+                    }
+                    
                     this.contraction.tickerFn = () => {
                         Matter.Body.setVelocity( this.head.body, {
                             x: angleX,
@@ -782,7 +790,7 @@ export class Catterpillar {
                 gsap.ticker.remove(this.contraction.tickerFn)
             }
 
-            let loosenConstraint, loosenConstraintStiffness
+            let loosenConstraint: Matter.Constraint, loosenConstraintStiffness: number
 
             this.composite.constraints.forEach(constraint => {
                 if (constraint.label.startsWith(`bodyPartConnection,${this.butt.body.id}`)) {

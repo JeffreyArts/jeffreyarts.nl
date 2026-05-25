@@ -333,7 +333,6 @@ const story = defineStore("story", {
 
             const storyDB = await this.getLatestStoryFromDatabase(name)
             if (storyDB) {
-                storyDB.cooldown = activeStory.instance.cooldown
                 await this.updateStory(name, storyDB)
             }
             

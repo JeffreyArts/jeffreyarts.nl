@@ -8,7 +8,7 @@
             layoutSize: layoutSize,
             blocks: pageData.blocks
         }" @loaded="loaded"/>
-        <FilterComponent v-if="pageData?.filter?.name && showFilters" :options="pageData?.filter" :pageDetails="pageData" ref="filter" @filterUpdated="updateFilter"/>
+        <FilterComponent v-if="pageData?.filter?.name && showFilters" :options="pageData?.filter" :pageDetails="pageData" ref="filter" />
     </section>
     <MatterBox v-if="identity" :identity="identity"></MatterBox>
     <page404 v-if="is404"/>

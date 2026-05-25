@@ -1,6 +1,6 @@
 // stores/database.ts
 import { defineStore } from "pinia"
-import { openDB, type IDBPDatabase } from "idb"
+import { IDBPTransaction, openDB, type IDBPDatabase } from "idb"
 
 export const database = defineStore("database", {
     state: () => ({
@@ -20,7 +20,7 @@ export const database = defineStore("database", {
             const DBVERSION = Number(import.meta.env.VITE_DBVERSION) || 1
 
             this.initPromise = openDB(DBNAME, DBVERSION, {
-                upgrade: (db, oldVersion, newVersion, transaction) => {
+                upgrade: (db, oldVersion, newVersion, transaction: IDBPTransaction<unknown, string[], "versionchange">) => {
                     // Identities store
                     this.createStore(db, transaction, "identities", { keyPath: "id" }, [
                         "id",
@@ -48,7 +48,7 @@ export const database = defineStore("database", {
             this.db = await this.initPromise
             return this.db
         },
-        createStore(db: IDBPDatabase, transaction, storeName: string, options: IDBObjectStoreParameters, indexes: Array<string>) {
+        createStore(db: IDBPDatabase, transaction: IDBPTransaction<unknown, string[], "versionchange">, storeName: string, options: IDBObjectStoreParameters, indexes: Array<string>) {
             let store
             if (!db.objectStoreNames.contains(storeName)) {
                 store = db.createObjectStore(storeName, options)

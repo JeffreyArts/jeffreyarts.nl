@@ -1,6 +1,7 @@
 // import Paper from "paper"
 import gsap from "gsap"
 import { Point } from "@/model/physics/path"
+import ts from "typescript"
 
 export type EyeOptions = {
     ref: {
@@ -89,13 +90,14 @@ export class Eye  {
             this.isFollowing.kill()
         }
 
-        
-        const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x)
-        const distance = Math.min( Math.hypot(this.target.x - this.x, this.target.y - this.y), 10)
-        
-        this.isFollowing = this.look(angle * (180 / Math.PI), distance)
+        if (this.target){
+            const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x)
+            const distance = Math.min( Math.hypot(this.target.x - this.x, this.target.y - this.y), 10)
+            
+            this.isFollowing = this.look(angle * (180 / Math.PI), distance)
+        }
 
-        requestAnimationFrame(this.followObject.bind(this))
+        requestAnimationFrame(() => this.followObject())
     }
 
     lookAt(target: { x: number, y: number }, duration?: number) {
@@ -235,8 +237,11 @@ export class Eye  {
         }
 
         this.target = null
+        // @ts-ignore
         this.pupil = null
+        // @ts-ignore
         this.ref = null
+        // @ts-ignore
         this.offset = null
     }
 }

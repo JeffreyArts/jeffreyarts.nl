@@ -66,31 +66,13 @@ class SpeechBubble  {
         this.domElement = this.#createDomElement(this.text)
         this.size = this.domElement.clientHeight
 
-        this.#createBubble(this.x, this.y)
-        // setTimeout(() => {
-        //     this.updatePosition()
-        // })
-
+        const cb = this.#createBubble(this.x, this.y)
+        this.bubble = cb.bubble
+        this.composite = cb.composite
 
         Matter.World.add(this.world, this.composite)
         
         this.#loop()
-            
-        // return new Proxy(this, {
-        //     set: function (target: SpeechBubble, key, value) {
-        //         if (key === "x" || key === "y") {
-        //             target[key] = value
-        //             target.updatePosition()
-        //         }
-
-        //         if (key === "text") {
-        //             target[key] = value
-        //             target.updateText()
-        //         }
-
-        //         return true
-        //     }
-        // })
     }
 
     #createDomElement (text: string) {
@@ -301,7 +283,10 @@ class SpeechBubble  {
         this.domElement.style.left = (this.x + this.anchor.width) + "px"
         this.domElement.style.top = (this.y - this.anchor.height - this.size / 2) + "px"
 
-        return this.bubble
+        return {
+            bubble: this.bubble,
+            composite: this.composite
+        }
     }
 
     // #updateTextPosition() {
@@ -433,7 +418,7 @@ class SpeechBubble  {
     updateText = (text: string, speed = 100) =>{
         if (!this.domElement) {
             console.warn("Missing domElement", this.isDestroyed)
-            return
+            throw new Error("Missing domElement")
         }
         this.animatedText = text
         this.#animateTextLoop(speed)

@@ -10,14 +10,14 @@ class MoveTowardsMouse extends Story {
     async start() {
         console.info("🦩 Move Towards Mouse story started")
 
-        if (this.controller) {
-            this.controller.ref.addpointerDownEvent(this.updateMousePosition.bind(this), "move-towards-mouse-story-update-mouse-position")
-            this.controller.ref.addpointerMoveEvent(this.updateMousePosition.bind(this), "move-towards-mouse-story-update-mouse-position")
+        if (!this.controller) return
+        this.controller.ref.addpointerDownEvent(this.updateMousePosition.bind(this), "move-towards-mouse-story-update-mouse-position")
+        this.controller.ref.addpointerMoveEvent(this.updateMousePosition.bind(this), "move-towards-mouse-story-update-mouse-position")
 
-            if (this.catterpillar) {
-                this.passiveOffset = this.catterpillar.length * this.catterpillar.thickness
-            }
+        if (this.catterpillar) {
+            this.passiveOffset = this.catterpillar.length * this.catterpillar.thickness
         }
+    
     }
 
     updateMousePosition(pos: { x: number; y: number }) {
@@ -45,8 +45,6 @@ class MoveTowardsMouse extends Story {
             this.controller.ref.removepointerDownEvent("move-towards-mouse-story-update-mouse-position")
             this.controller.ref.removepointerMoveEvent("move-towards-mouse-story-update-mouse-position")
         }
-
-        this.controller = undefined
 
         // Process the default story destroy
         super.destroy()

@@ -19,23 +19,15 @@ class PettingStory extends Story {
 
     async start() {
         console.info("🦩 Petting story started")
-        if (!this.controller || !this.identityStore || !this.actionStore) return
+        if (!this.controller || !this.identityStore) return
         this.identity = this.identityStore.current
         
         this.controller.ref.addpointerDownEvent(this.createPetBrush.bind(this), "petting-story-create-brush")
         this.controller.ref.addpointerMoveEvent(this.updatePetBrushPosition.bind(this), "petting-story-move-brush")
         this.controller.ref.addpointerUpEvent(this.removePetBrush.bind(this), "petting-story-remove-brush")
         
-        // const maxLoveArray = await this.actionStore.loadLastActionsFromDB(this.identity.id, "petting", this.maxLove)
-        Matter.Events.on(this.controller.ref.engine, "collisionActive",this.#collisionEventListener)   
         
-        // // remove all values that are older than 24 hours
-        // const newMaxLoveArray = maxLoveArray.filter(action => {
-        //     const twentyFourHours = 24 * 60 * 60 * 1000
-        //     return (Date.now() - action.created) < twentyFourHours
-        // })
-
-        // this.maxLove = this.maxLove - newMaxLoveArray.length
+        Matter.Events.on(this.controller.ref.engine, "collisionActive",this.#collisionEventListener)   
     }
 
 
@@ -89,16 +81,12 @@ class PettingStory extends Story {
         if (!this.controller || !this.identityStore?.current) return
         this.catterpillar = this.controller.catterpillar
         
+        if (!this.catterpillar) return
+
         const bodyParts = this.catterpillar.bodyParts
         
         if (!this.brush) return
         if (!this.catterpillar.isOnSolidGround) return
-
-        if (this.addLove <= this.maxLove+1 && Math.floor(this.addLove) !== this.addedLove) {
-            this.identityStore.current.love += Math.floor(this.addLove) - this.addedLove
-            this.addedLove = Math.floor(this.addLove)
-            // this.actionStore.add(this.identityStore.current.id, "petting", 1)
-        }
                 
         this.xPos = this.brush.position.x
         bodyParts.forEach(bodyPart => {
