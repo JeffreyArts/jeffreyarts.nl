@@ -1,477 +1,218 @@
 <template>
-    
-    <div id="matter-box">
-        <div class="polygon-drawer">
-            <div class="toolbar" :class="{ hidden: isInactive }">
-                <button class="tool-btn" :class="{ active: mode === 'drawing' }" @click="setMode('drawing')" title="Teken (D)">
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                        <polygon points="9,2 16,13 2,13" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                        <circle cx="9" cy="2" r="1.5" fill="currentColor"/>
-                        <circle cx="16" cy="13" r="1.5" fill="currentColor"/>
-                        <circle cx="2" cy="13" r="1.5" fill="currentColor"/>
-                    </svg>
-                    <span>Teken</span>
-                </button>
-
-                <button class="tool-btn" :class="{ active: mode === 'play' }" @click="setMode('play')" title="Speel (P)">
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                        <polygon points="4,2 16,9 4,16" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                    </svg>
-                    <span>Speel</span>
-                </button>
-
-                <div class="separator"/>
-
-                <button class="tool-btn reset-btn" @click="resetAll" title="Reset (R)">
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                        <path d="M3 9a6 6 0 1 0 1.5-3.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                        <polyline points="3,4 3,9 8,9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                    <span>Reset</span>
-                </button>
-
-                <div class="polygon-count" v-if="polygons.length > 0">
-                    {{ polygons.length }} {{ polygons.length === 1 ? 'polygoon' : 'polygonen' }}
-                </div>
-            </div>
-        </div>
-        
-        <!-- Matter container -->
+    <div id="matter-box-polygons">
         <section id="catterpillar" ref="catterpillar"></section>
 
+        <!-- Draw overlay -->
+        <svg
+            v-if="polygonMode === 'draw'"
+            id="draw-overlay"
+            @click="addDraftPoint"
+            @mousemove="updateCursor"
+            @dblclick.prevent="confirmPolygon"
+        >
+            <circle
+                v-for="(pt, i) in draftPoints"
+                :key="i"
+                :cx="pt.x"
+                :cy="pt.y"
+                r="5"
+                fill="#FF3B5C"
+                stroke="white"
+                stroke-width="1.5"
+                style="cursor: pointer"
+                @click.stop="i === 0 && draftPoints.length >= 3 ? confirmPolygon() : null"
+            />
+        </svg>
+
+        
+
+        <!-- Polygon toolbar -->
+         <div id="polygon-toolbar" @mouseenter="toolbarVisible = true" @mouseleave="polygonMode === 'play' ? toolbarVisible = false : null" :class="{ hidden: !toolbarVisible && polygonMode === 'play' }">
+            
+            <button class="tool-btn" :class="{ active: polygonMode === 'draw' }" @click="setMode('draw')" title="Draw polygon (D)">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <polygon points="9,2 16,7 13,15 5,15 2,7" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                </svg>
+            </button>
+
+            <button class="tool-btn" :class="{ active: polygonMode === 'edit' }" @click="setMode('edit')" title="Edit (E)">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <path d="M3 12.5V15h2.5l7.4-7.4-2.5-2.5L3 12.5z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <path d="M13.2 4.3l.5-.5a1 1 0 0 1 1.4 1.4l-.5.5-1.4-1.4z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                </svg>
+            </button>
+
+            <button class="tool-btn" :class="{ active: polygonMode === 'play' }" @click="setMode('play')" title="Play (P)">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <path d="M5 3l11 6-11 6V3z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/>
+                </svg>
+            </button>
+
+            <button class="tool-btn danger" @click="deleteAllPolygons" title="Delete all (Del)">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <path d="M3 5h12M7 5V3h4v2M6 5l1 10h4l1-10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </button>
+
+            <div class="tool-divider" v-if="polygonMode === 'draw' && draftPoints.length > 0" />
+
+            <button
+                v-if="polygonMode === 'draw' && draftPoints.length >= 3"
+                class="tool-btn confirm"
+                @click="confirmPolygon"
+                title="Confirm (Enter)"
+            >
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <path d="M3 9l4.5 4.5L15 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </button>
+            <button
+                v-if="polygonMode === 'draw' && draftPoints.length > 0"
+                class="tool-btn"
+                @click="cancelDraft"
+                title="Cancel (Esc)"
+            >
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <path d="M4 4l10 10M14 4L4 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </button>
+        </div>
     </div>
 </template>
-
-
 
 <script lang="ts">
 import { defineComponent, type PropType } from "vue"
 import { MatterController } from "@/model/physics/controller"
+import { Polygon } from "@/model/physics/polygon"
 import { gsap } from "gsap"
-import _ from "lodash"
-import jaoIcon from "./jao-icon.vue"
 
 import useStoryStore from "@/stores/story"
 import useIdentityStore from "@/stores/identity"
-import { type IdentityField } from "@/model/catterpillar/identity"
-import { Polygon } from "@/model/physics/polygon"
 import { PolygonObjectModel } from "@/model/physics/draw"
+import { type IdentityField } from "@/model/catterpillar/identity"
 
-const PALETTE = [
-    '#FF3B5C', '#FF8C00', '#FFD700', '#00C896',
-    '#00AAFF', '#8B5CF6', '#FF6EB4', '#00E5CC',
-    '#FF5733', '#3DFF91', '#FF00FF', '#00FFFF',
-]
+type Point = { x: number; y: number }
 
-const STORAGE_KEY = 'polygon_drawer_data'
-const INACTIVITY_MS = 2000
+const STORAGE_KEY = "catterpillar:polygons"
+
+// ── Serialisation helpers ─────────────────────────────────────────────────────
+
+interface StoredPolygon {
+    id: string
+    points: Point[]
+    color: string
+}
+
+function savePolygons(polygons: Record<string, Polygon>) {
+    const data: StoredPolygon[] = Object.values(polygons).map(p => ({
+        id: p.id,
+        points: p.points.map(pt => ({ ...pt })),
+        color: p.color,
+    }))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+}
+
+function loadStoredPolygons(): StoredPolygon[] {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY)
+        if (!raw) return []
+        return JSON.parse(raw) as StoredPolygon[]
+    } catch {
+        return []
+    }
+}
 
 export default defineComponent({
     props: {
         identity: {
             type: Object as PropType<IdentityField>,
-            required: true
-        }
-    },
-    components: {
-        jaoIcon
+            required: true,
+        },
     },
     data() {
         return {
             controller: null as MatterController | null,
             dev: true,
-            polygons: [] as Partial<Polygon>[],
-            palletteIndex: 0,
-            newPolygon: undefined as undefined | { currentPoints: Array<{ x: number; y: number }>, color: string },
-            // ── Polygon drawer ──────────────────────────────────────────
-            mousePos: null as { x: number; y: number } | null,dragTarget: null as { obj: PolygonObjectModel, pointIndex: number, originalPoints: { x: number; y: number }[] } | null,
-            inactivityTimer: null as ReturnType<typeof setTimeout> | null,
-            mode: 'drawing' as 'drawing' | 'play',
-            isInactive: false,
-            isMouseDown: false,
+
+            // id → Polygon instance (physics + draw)
+            polygons: {} as Record<string, Polygon>,
+
+            // Draw mode
+            polygonMode: "none" as "none" | "draw" | "edit" | "play",
+            toolbarVisible: false,
+            draftPoints: [] as Point[],
+            cursor: null as Point | null,
+
+            // Edit mode
+            editPoints: [] as Point[],
+            draggingPolygonId: null as string | null,
+            draggingVertexIndex: null as number | null,
         }
     },
     watch: {
         "identity.id": {
             handler() {
-                console.log("Identity changed, updating MatterBox", this.identity)
                 this.addCatterpillar()
                 this.start()
             },
-            immediate: true
+            immediate: true,
         },
     },
     setup() {
         const identityStore = useIdentityStore()
         const storyStore = useStoryStore()
-        return {
-            identityStore,
-            storyStore,
-        }
+        return { identityStore, storyStore }
     },
     async mounted() {
         const offsetBottom = 0
         const startPosition = {
             x: window.innerWidth / 2,
-            y: window.innerHeight - offsetBottom - this.identity.thickness
+            y: window.innerHeight - offsetBottom - this.identity.thickness,
         }
 
         this.controller = new MatterController(this.$refs["catterpillar"] as HTMLElement, {
             identity: this.identity,
             catterpillarPos: startPosition,
-            offsetBottom: 2
+            offsetBottom: 2,
         })
+
         this.addCatterpillar()
+        this.restorePolygons()
 
-        // ── Polygon drawer events ────────────────────────────────────
-        window.addEventListener('mousedown',  this.onMouseDown)
-        window.addEventListener('mouseup',    this.onMouseUp)
-        window.addEventListener('touchstart', this.onTouchStart, { passive: false })
-        window.addEventListener('keydown',    this.onKeyDown)
-        window.addEventListener('mousemove',  this.onMouseMove)
-
-        window.addEventListener('mousemove',  this.resetInactivityTimer)
-        window.addEventListener('mousedown',  this.resetInactivityTimer)
-        window.addEventListener('click',      this.resetInactivityTimer)
-        window.addEventListener('touchstart', this.resetInactivityTimer, { passive: true })
-
-        this.resetInactivityTimer()
-
-        // ── Restore polygons from localStorage ───────────────────────
-        this.polygons = this.loadPolygonsFromLocalStorage()
-        this.polygons.forEach(poly => {
-            if (this.controller && poly instanceof Polygon) {
-                const polygon = this.controller.draw.addPolygon(poly)
-                polygon.showAnchors = true
-                
-            }
-        })
+        window.addEventListener("mousedown", this.onMouseDown)
+        window.addEventListener("mousemove", this.onGlobalMouseMove)
+        window.addEventListener("mouseup", this.onGlobalMouseUp)
+        window.addEventListener("keydown", this.onKeyDown)
     },
-    
     unmounted() {
         if (this.controller) {
             this.controller.destroy()
             this.controller = null
         }
-
-        // ── Polygon drawer events ────────────────────────────────────
-        window.removeEventListener('mousedown',  this.onMouseDown)
-        window.removeEventListener('mouseup',    this.onMouseUp)
-        window.removeEventListener('touchstart', this.onTouchStart)
-        window.removeEventListener('keydown',    this.onKeyDown)
-        window.removeEventListener('mousemove',  this.onMouseMove)
-
-        window.removeEventListener('mousemove',  this.resetInactivityTimer)
-        window.removeEventListener('mousedown',  this.resetInactivityTimer)
-        window.removeEventListener('click',      this.resetInactivityTimer)
-        window.removeEventListener('touchstart', this.resetInactivityTimer)
-
-        if (this.inactivityTimer) clearTimeout(this.inactivityTimer)
-
-        // ── Destroy all polygon instances ────────────────────────────
-        this.polygons.forEach(poly => {
-            if (poly instanceof Polygon) poly.destroy()
-        })
-        this.polygons = []
+        // Polygons are owned by the physics world; destroy them all
+        for (const poly of Object.values(this.polygons)) {
+            poly.destroy()
+        }
+        window.removeEventListener("mousedown", this.onMouseDown)
+        window.removeEventListener("mousemove", this.onGlobalMouseMove)
+        window.removeEventListener("mouseup", this.onGlobalMouseUp)
+        window.removeEventListener("keydown", this.onKeyDown)
     },
     methods: {
-        
-        // ── Coordinate helper ────────────────────────────────────────
-        canvasPoint(e: MouseEvent | Touch): { x: number; y: number } {
-            const el = this.$refs["catterpillar"] as HTMLElement | undefined
-            if (!el) return { x: 0, y: 0 }
-            const rect = el.getBoundingClientRect()
-            return {
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top,
-            }
-        },
 
-        // ── Inactivity ───────────────────────────────────────────────
-        resetInactivityTimer() {
-            this.isInactive = false
-            if (this.inactivityTimer) clearTimeout(this.inactivityTimer)
-            this.inactivityTimer = setTimeout(() => {
-                this.isInactive = true
-            }, INACTIVITY_MS)
-        },
+        // ── Catterpillar (unchanged logic) ──────────────────────────────────
 
-        // ── Mode ─────────────────────────────────────────────────────
-        setMode(m: 'drawing' | 'play') {
-            this.mode = m
-            this.cancelDraw()
-            this.dragTarget = null
-
-            this.controller?.draw.objects
-                .filter(o => o.type === 'polygon')
-                .forEach(o => {
-                    (o as PolygonObjectModel).showAnchors = m === 'drawing'
-                })
-        },
-        
-        // ── Draw / close / cancel ────────────────────────────────────
-        cancelDraw() {
-            this.newPolygon = undefined
-            if (this.controller?.draw.previewObj) {
-                this.controller.draw.previewObj.model = undefined
-            }
-        },
-
-        closePolygon() {
-            if (!this.newPolygon) return
-            if (!this.controller?.ref.world) return
-            if (this.newPolygon.currentPoints.length < 3) return
-
-            if (this.controller?.draw.previewObj) {
-                this.controller.draw.previewObj.model = undefined
-            }
-
-            const poly = new Polygon({
-                id: `polygon-${Date.now()}`,
-                points: this.newPolygon.currentPoints.map(p => ({
-                    x: p.x,
-                    y: p.y
-                })),
-                color: this.newPolygon.color
-            }, this.controller.ref.world)
-            
-            const obj = this.controller.draw.addPolygon(poly)
-            obj.showAnchors = this.mode === 'drawing'
-            this.newPolygon = undefined
-            this.savePolygonsToLocalStorage(this.polygons)
-        },
-
-        toggleEditMode() {
-            if (this.mode === 'play') return
-            this.cancelDraw()
-            this.dragTarget = null
-
-            this.controller?.draw.objects
-                .filter(o => o.type === 'polygon')
-                .forEach(o => {
-                    (o as PolygonObjectModel).showAnchors = true
-                })
-        },
-
-        // ── Mouse events ─────────────────────────────────────────────
-        
-        onMouseDown(e: MouseEvent) {
-            if ((e.target as HTMLElement)?.closest('.tool-btn')) return
-            if (this.mode === 'play') return
-
-            this.isMouseDown = true
-            const pt = this.canvasPoint(e)
-
-            // Try to hit an anchor first
-            const polygons = this.controller?.draw.objects.filter(o => o.type === 'polygon') as PolygonObjectModel[]
-            if (polygons) {
-                for (const obj of polygons) {
-                    if (!obj.model || !obj.two) continue
-                    const hit = obj.two.anchors.findIndex(a =>
-                        Math.hypot(pt.x - a.position.x, pt.y - a.position.y) < 12
-                    )
-                    if (hit !== -1) {
-                        this.dragTarget = {
-                            obj,
-                            pointIndex: hit,
-                            originalPoints: [...obj.model.points.map(p => ({ ...p }))]
-                        }
-                        return
-                    }
-                }
-            }
-
-            // No anchor hit — draw a point
-            if (!this.newPolygon) {
-                this.newPolygon = {
-                    currentPoints: [pt],
-                    color: PALETTE[this.polygons.length % PALETTE.length],
-                }
-                return
-            }
-
-            const first = this.newPolygon.currentPoints[0]
-            if (
-                this.newPolygon.currentPoints.length >= 3 &&
-                Math.hypot(pt.x - first.x, pt.y - first.y) < 17.5
-            ) {
-                this.closePolygon()
-                return
-            }
-
-            this.newPolygon.currentPoints.push(pt)
-        },
-
-        onMouseUp(_e: MouseEvent) {
-            this.isMouseDown = false
-
-                if (this.dragTarget) {
-                    this.savePolygonsToLocalStorage(this.polygons)
-                    this.dragTarget = null
-                } else {
-                    this.savePolygonsToLocalStorage(this.polygons)
-                }
-            },
-
-            onMouseMove(e: MouseEvent) {
-        if (this.mode === 'play') return
-
-        this.mousePos = this.canvasPoint(e)
-
-        if (this.dragTarget && this.isMouseDown) {
-            const { obj, pointIndex } = this.dragTarget
-
-            if (!obj.model || !this.mousePos) return
-
-            // 🔥 FULL IMMUTABLE COPY
-            const next = obj.model.points.map(p => ({
-                x: p.x,
-                y: p.y
-            }))
-
-            next[pointIndex] = {
-                x: this.mousePos.x,
-                y: this.mousePos.y
-            }
-
-            obj.model.updatePoints(next)
-
-            return
-        }
-
-        // DRAWING PREVIEW
-        if (!this.newPolygon || !this.controller) return
-
-        const draw = this.controller.draw
-
-        const previewPoints = this.newPolygon.currentPoints.map(p => ({
-            x: p.x,
-            y: p.y
-        }))
-
-        if (!draw.previewObj) {
-            draw.addPolygonPreview(
-                previewPoints,
-                this.mousePos,
-                this.newPolygon.color
-            )
-        } else if (draw.previewObj.model) {
-            draw.previewObj.model.points = previewPoints
-            draw.previewObj.model.mousePos = this.mousePos
-            draw.previewObj.model.color = this.newPolygon.color
-        }
-    },
-
-        // ── Touch events ─────────────────────────────────────────────
-        onTouchStart(e: TouchEvent) {
-            e.preventDefault()
-            if (this.mode !== 'drawing') return
-
-            const pt = this.canvasPoint(e.touches[0])
-
-            if (!this.newPolygon) {
-                this.newPolygon = {
-                    currentPoints: [pt],
-                    color: PALETTE[this.polygons.length % PALETTE.length],
-                }
-                return
-            }
-
-            const first = this.newPolygon.currentPoints[0]
-            if (
-                this.newPolygon.currentPoints.length >= 3 &&
-                Math.hypot(pt.x - first.x, pt.y - first.y) < 21
-            ) {
-                this.closePolygon()
-                return
-            }
-
-            this.newPolygon.currentPoints.push(pt)
-        },
-        
-
-        // ── Keyboard ─────────────────────────────────────────────────
-        onKeyDown(e: KeyboardEvent) {
-            switch (e.key) {
-                case 'Escape':
-                    if (this.dragTarget) {
-                        const model = this.dragTarget.obj.model!
-                        model.updatePoints([...this.dragTarget.originalPoints])
-                        this.dragTarget = null
-                    } else {
-                        this.cancelDraw()
-                    }
-                    break
-                case 'Enter':
-                    if (this.dragTarget) {
-                        this.dragTarget.obj.model?.updatePoints([...this.dragTarget.obj.model.points])
-                        this.dragTarget = null
-                        this.savePolygonsToLocalStorage(this.polygons)
-                    } else if (this.newPolygon && this.newPolygon.currentPoints.length >= 3) {
-                        this.closePolygon()
-                    }
-                    break
-                case 'p': case 'P': this.setMode('play'); break
-                case 'd': case 'D': this.setMode('drawing'); break
-            }
-        },
-
-        // ── Reset ────────────────────────────────────────────────────
-        resetAll() {
-            this.cancelDraw()
-            this.polygons.forEach(poly => {
-                if (poly instanceof Polygon) poly.destroy()
-            })
-            this.polygons = []
-            localStorage.removeItem(STORAGE_KEY)
-        },
-
-        // ── Storage ──────────────────────────────────────────────────
-        loadPolygonsFromLocalStorage(): Polygon[] {
-            try {
-                const raw = localStorage.getItem(STORAGE_KEY)
-                if (!raw || !this.controller?.ref.world) return []
-                const data = JSON.parse(raw) as { id: string; points: { x: number; y: number }[]; color: string }[]
-
-                
-                return data.map(d => {
-                    const cx = d.points.reduce((s, p) => s + p.x, 0) / d.points.length
-                    const cy = d.points.reduce((s, p) => s + p.y, 0) / d.points.length
-                    return new Polygon({
-                        x: cx, y: cy,
-                        id: d.id,
-                        points: d.points,
-                        color: d.color,
-                    }, this.controller!.ref.world)
-                })
-            } catch { return [] }
-        },
-
-        savePolygonsToLocalStorage(polygons: Partial<Polygon>[]) {
-            const serializable = polygons.map(poly => ({
-                id: poly.id,
-                points: poly.points,
-                color: poly.color,
-            }))
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(serializable))
-        },
-
-        // ── Catterpillar ─────────────────────────────────────────────
         async start() {
             await this.storyStore.initialised
-            if (window.location.search.includes("dev")) {
-                this.toggleDevMode()
-            }
+            if (window.location.search.includes("dev")) this.toggleDevMode()
+
             await this.storyStore.updateConditionalStories()
             console.info("=== 🦩 Starting passive stories ===")
             await this.storyStore.setActiveStory("wall-slam")
             await this.storyStore.setActiveStory("petting")
             await this.storyStore.setActiveStory("move-towards-mouse")
             await this.storyStore.setActiveStory("blocks")
-            setTimeout(() => {
-                console.info("================================")
-                console.info("")
-            })
+            setTimeout(() => { console.info("================================\n") })
         },
 
         addCatterpillar() {
@@ -489,71 +230,319 @@ export default defineComponent({
             gsap.to(twoEl, { duration: 0.3, opacity: this.dev ? 0 : 1 })
             gsap.to(rendererEl, { duration: 0.3, opacity: this.dev ? 1 : 0 })
         },
-    }
+
+        // ── LocalStorage persistence ─────────────────────────────────────────
+
+        restorePolygons() {
+            if (!this.controller) return
+            const world = this.controller.ref.engine.world
+            const draw = this.controller.draw
+
+            const stored = loadStoredPolygons()
+            for (const s of stored) {
+                const poly = new Polygon({ id: s.id, points: s.points, color: s.color }, world)
+                this.polygons[s.id] = poly
+                draw.addPolygon(poly)
+            }
+        },
+
+        persistPolygons() {
+            savePolygons(this.polygons)
+        },
+
+        // ── Toolbar actions ───────────────────────────────────────────────────
+        setMode(newMode: "none" | "draw" | "edit" | "play") {
+            // ── Teardown current mode ─────────────────────────────────────────
+            if (this.polygonMode === 'edit') {
+                for (const id of Object.keys(this.polygons)) {
+                    const drawObj = this.getDrawObject(id)
+                    if (drawObj) drawObj.showAnchors = false
+                }
+            }
+            if (this.polygonMode === 'draw') {
+                this.cancelDraft()
+            }
+            if (this.polygonMode === 'play') {
+                for (const id of Object.keys(this.polygons)) {
+                    const drawObj = this.getDrawObject(id)
+                    
+                    if (drawObj?.two) {
+                        drawObj.two.path.opacity = 1
+                    }
+                }
+                this.toolbarVisible = true
+            }
+
+            // Toggle off if same mode
+            if (this.polygonMode === newMode) {
+                this.polygonMode = 'none'
+                return
+            }
+
+            // ── Setup new mode ────────────────────────────────────────────────
+            this.polygonMode = newMode
+
+            if (newMode === 'edit') {
+                for (const id of Object.keys(this.polygons)) {
+                    const drawObj = this.getDrawObject(id)
+                    if (drawObj) drawObj.showAnchors = true
+                }
+            }
+            if (newMode === 'play') {
+                for (const id of Object.keys(this.polygons)) {
+                    const drawObj = this.getDrawObject(id)
+                    
+                    if (drawObj?.two) {
+                        drawObj.two.path.opacity = 0
+                    }
+                }
+                this.toolbarVisible = false
+            }
+        },
+        
+        cancelDraft() {
+            this.draftPoints = []
+            this.polygonMode = "none"
+            this.removePreview()
+        },
+
+        deleteAllPolygons() {
+            for (const poly of Object.values(this.polygons)) {
+                poly.destroy()
+            }
+            this.polygons = {}
+            this.polygonMode = "none"
+            this.persistPolygons()
+        },
+
+        // ── Draw mode ─────────────────────────────────────────────────────────
+
+        addDraftPoint(event: MouseEvent) {
+            if (this.polygonMode !== "draw") return
+            const pt = { x: event.clientX, y: event.clientY }
+
+            // Snap-close near first point
+            if (this.draftPoints.length >= 3) {
+                const first = this.draftPoints[0]
+                if (Math.hypot(pt.x - first.x, pt.y - first.y) < 18) {
+                    this.confirmPolygon()
+                    return
+                }
+            }
+            this.draftPoints.push(pt)
+            this.syncPreview()
+        },
+
+        updateCursor(event: MouseEvent) {
+            this.cursor = { x: event.clientX, y: event.clientY }
+            this.syncPreview()
+        },
+
+        // Keep the Draw-layer preview object in sync with draftPoints + cursor
+        syncPreview() {
+            if (!this.controller) return
+            const draw = this.controller.draw
+
+            if (this.draftPoints.length === 0 || !this.cursor) {
+                this.removePreview()
+                return
+            }
+
+            if (draw.previewObj) {
+                // Update existing preview model in-place; drawPolygonPreview reads it each frame
+                draw.previewObj.model = {
+                    points: [...this.draftPoints],
+                    mousePos: { ...this.cursor },
+                    color: "#FF3B5C",
+                }
+            } else {
+                draw.addPolygonPreview(this.draftPoints, this.cursor, "#FF3B5C")
+            }
+        },
+
+        removePreview() {
+            if (!this.controller) return
+            const draw = this.controller.draw
+            if (draw.previewObj) {
+                // Setting model to undefined causes drawPolygonPreview to return false
+                // which triggers #removePolygonPreview on the next frame
+                draw.previewObj.model = undefined
+            }
+        },
+
+        confirmPolygon() {
+            if (this.draftPoints.length < 3 || !this.controller) return
+            const world = this.controller.ref.engine.world
+            const draw = this.controller.draw
+            const id = `polygon-${Date.now()}`
+            const poly = new Polygon({ id, points: [...this.draftPoints] }, world)
+            this.polygons[id] = poly
+            draw.addPolygon(poly)
+            this.draftPoints = []
+            this.polygonMode = "none"
+            this.removePreview()
+            this.persistPolygons()
+        },
+
+        // ── Edit mode ─────────────────────────────────────────────────────────
+
+        startDragVertex(event: MouseEvent, index: number) {
+            if (this.polygonMode !== "edit") return
+            event.preventDefault()
+            this.draggingVertexIndex = index
+        },
+
+        onMouseDown(event: MouseEvent) {
+            if (this.polygonMode !== 'edit') return
+            for (const [id, poly] of Object.entries(this.polygons)) {
+                const index = poly.points.findIndex(
+                    p => Math.hypot(p.x - event.clientX, p.y - event.clientY) < 12
+                )
+                if (index !== -1) {
+                    event.preventDefault()
+                    this.draggingPolygonId = id
+                    this.draggingVertexIndex = index
+                    return
+                }
+            }
+        },
+
+        onGlobalMouseMove(event: MouseEvent) {
+            if (this.polygonMode === 'draw') {
+                this.cursor = { x: event.clientX, y: event.clientY }
+                this.syncPreview()
+                return
+            }
+            if (this.polygonMode === 'edit' && this.draggingPolygonId !== null && this.draggingVertexIndex !== null) {
+                const poly = this.polygons[this.draggingPolygonId]
+                if (!poly) return
+                const updated = poly.points.map((p, i) =>
+                    i === this.draggingVertexIndex
+                        ? { x: event.clientX, y: event.clientY }
+                        : { ...p }
+                )
+                poly.updatePoints(updated)
+            }
+        },
+
+        onGlobalMouseUp() {
+            if (this.draggingVertexIndex !== null) {
+                this.persistPolygons()
+            }
+            this.draggingPolygonId = null
+            this.draggingVertexIndex = null
+        },
+
+        // ── Keyboard shortcuts ────────────────────────────────────────────────
+
+        onKeyDown(e: KeyboardEvent) {
+            if (e.key === "Escape") {
+                if (this.polygonMode === "draw") this.cancelDraft()
+                else if (this.polygonMode === "edit") this.exitEditMode()
+            }
+            if (e.key === "Enter" && this.polygonMode === "draw") this.confirmPolygon()
+            if (e.key === 'd' && this.polygonMode === 'none') this.setMode('draw')
+            if (e.key === 'e') this.setMode('edit')
+            if (e.key === 'p') this.setMode('play')
+            if ((e.key === "Delete" || e.key === "Backspace") && this.polygonMode !== "draw") this.deleteAllPolygons()
+        },
+
+        // ── Draw-layer helpers ────────────────────────────────────────────────
+
+        // Retrieve the PolygonObjectModel from the Draw layer by polygon id
+        getDrawObject(id: string | null) {
+            if (!id || !this.controller) return null
+            return this.controller.draw.objects.find(
+                o => o.type === "polygon" && o.id === id
+            ) as PolygonObjectModel | undefined ?? null
+        },
+    },
 })
 </script>
 
-
-<style> 
-#matter-box, .polygon-drawer {
+<style>
+#matter-box-polygons {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    pointer-events: none;
     z-index: 1990;
 
     #matter {
-        opacity: 1;
-    }
-    #two-js {
-        opacity: 1;
+        opacity: 0;
     }
 }
 
-
-
-.toolbar {
+#draw-overlay,
+#edit-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     pointer-events: all;
-    position: fixed;
-    top: 20px;
+    cursor: crosshair;
+}
+
+#edit-overlay {
+    cursor: default;
+}
+
+/* ── Polygon toolbar ─────────────────────────────────────────────────────── */
+#polygon-toolbar {
+    position: absolute;
+    top: 24px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     align-items: center;
-    gap: 6px;
-    background: rgba(10,10,12,0.82);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,0.08);
+    gap: 4px;
+    padding: 6px 8px;
+    background: rgba(15, 15, 15, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.10);
     border-radius: 12px;
-    padding: 8px 12px;
-    box-shadow: 0 4px 32px rgba(0,0,0,0.4);
-    transition: opacity 0.6s ease, transform 0.6s ease;
-}
-.toolbar.hidden {
-    opacity: 0;
-    pointer-events: none;
-    transform: translateX(-50%) translateY(-8px);
+    backdrop-filter: blur(12px);
+    transition: opacity 0.3s;
+
+    &.hidden {
+        opacity: 0;
+    }
 }
 
 .tool-btn {
-    display: flex; align-items: center; gap: 6px;
-    padding: 6px 10px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 8px;
     background: transparent;
-    border: 1px solid transparent;
-    border-radius: 7px;
-    color: rgba(255,255,255,0.55);
-    font-family: inherit; font-size: 11px; letter-spacing: 0.04em;
+    color: rgba(255, 255, 255, 0.65);
     cursor: pointer;
-    transition: all 0.15s;
-    white-space: nowrap;
+    transition: background 0.15s, color 0.15s, transform 0.1s;
 }
-.tool-btn:hover  { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.9); }
-.tool-btn.active { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.15); color: #fff; }
-.reset-btn:hover { background: rgba(255,59,92,0.15); border-color: rgba(255,59,92,0.3); color: #FF3B5C; }
-
-.separator { width: 1px; height: 20px; background: rgba(255,255,255,0.1); margin: 0 4px; }
-
-.polygon-count { font-size: 10px; color: rgba(255,255,255,0.3); padding-left: 4px; letter-spacing: 0.06em; }
+.tool-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.10);
+    color: #fff;
+}
+.tool-btn:active:not(:disabled) { transform: scale(0.93); }
+.tool-btn.active {
+    background: rgba(255, 59, 92, 0.20);
+    color: #FF3B5C;
+}
+.tool-btn.confirm { color: #34D399; }
+.tool-btn.confirm:hover { background: rgba(52, 211, 153, 0.15); }
+.tool-btn.danger { color: rgba(255, 255, 255, 0.4); }
+.tool-btn.danger:hover:not(:disabled) {
+    background: rgba(255, 59, 92, 0.15);
+    color: #FF3B5C;
+}
+.tool-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+.tool-divider {
+    width: 1px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.12);
+    margin: 0 2px;
+}
 </style>
