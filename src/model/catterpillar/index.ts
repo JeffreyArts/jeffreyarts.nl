@@ -528,6 +528,11 @@ export class Catterpillar {
                         return reject()
                     }
 
+                    if (!this.contraction?.headConstraint && !this.contraction?.buttConstraint) {
+                        this.releaseSpine() 
+                        return reject()
+                    }
+
                     this.spine.length = obj.length
                     let maxVelocity = this.length / 100000
                     if ( this.length < 8) {
@@ -563,6 +568,7 @@ export class Catterpillar {
                         if (index == this.length - 1) {
                             yForce = -.1
                         }
+                        
                         // change Y velocity to simulate bounce
                         Matter.Body.applyForce( bp.body, bp.body.position, {
                             // x: (this.head.position.x - this.butt.position.x),
