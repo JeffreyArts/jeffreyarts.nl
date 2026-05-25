@@ -1,6 +1,7 @@
 import Story from "@/stories/_base"
 import BlockModel from "@/model/physics/block"
 import router from "@/routes"
+import Matter from "matter-js"
 
 class BlocksStory extends Story {
     type = "passive" as const
@@ -11,8 +12,8 @@ class BlocksStory extends Story {
     async start() {
         console.info("🦩 Blocks story started")
 
-        window.addEventListener("layoutChange", this.layoutHasChangedEvent.bind(this))
-        
+        window.addEventListener("layoutChange", this.onLayoutHasChangedEventBind)
+        document.addEventListener("scroll", this.onScrollBind)
         router.beforeEach((to, from, next) => {
             // Clean up blocks before navigating
             this.clearBlocks()
@@ -49,6 +50,29 @@ class BlocksStory extends Story {
             this.updateBlocks()
         }, 100) // 100ms debounce 
     }
+    onLayoutHasChangedEventBind = this.layoutHasChangedEvent.bind(this)
+
+    onScroll() {
+        const contractions = this.catterpillar?.contraction
+        if (contractions) {
+            if (contractions.bellyConstraint) {
+                this.catterpillar.unpin(contractions.bellyConstraint)
+                contractions.bellyConstraint = undefined
+            }
+
+            if (contractions.headConstraint) {
+                this.catterpillar.unpin(contractions.headConstraint)
+                contractions.headConstraint = undefined
+            }
+            
+            if (contractions.buttConstraint) {
+                this.catterpillar.unpin(contractions.buttConstraint)
+                contractions.buttConstraint = undefined
+            }
+        }
+    }
+    onScrollBind = this.onScroll.bind(this)
+        
 
     updateBlocks() {
         const elements = document.body.querySelectorAll(".block")
@@ -144,6 +168,9 @@ class BlocksStory extends Story {
             this.controller.ref.removepointerDownEvent("move-towards-mouse-story-update-mouse-position")
             this.controller.ref.removepointerMoveEvent("move-towards-mouse-story-update-mouse-position")
         }
+
+        window.removeEventListener("layoutChange", this.onLayoutHasChangedEventBind)
+        document.removeEventListener("scroll", this.onScrollBind)
 
         // Process the default story destroy
         super.destroy()
