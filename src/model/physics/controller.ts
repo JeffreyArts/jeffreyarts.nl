@@ -208,8 +208,25 @@ export class MatterController {
     }
 
     #dragCatterpillar(mouse: { x: number, y: number }) {
-        if (this.disableDragging) {
-            return
+        if (this.disableDragging) return
+        if (!this.mousePin) return
+
+        const contractions = this.catterpillar?.contraction
+        if (contractions) {
+            if (contractions.bellyConstraint) {
+                this.catterpillar.unpin(contractions.bellyConstraint)
+                contractions.bellyConstraint = undefined
+            }
+
+            if (contractions.headConstraint) {
+                this.catterpillar.unpin(contractions.headConstraint)
+                contractions.headConstraint = undefined
+            }
+            
+            if (contractions.buttConstraint) {
+                this.catterpillar.unpin(contractions.buttConstraint)
+                contractions.buttConstraint = undefined
+            }
         }
 
         const width = this.ref.renderer.options.width || 0
