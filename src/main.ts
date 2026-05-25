@@ -4,9 +4,6 @@ import router from "./routes"
 import { createPinia } from "pinia"
 import { createHead } from "@unhead/vue/client"
 import { CanonicalPlugin } from 'unhead/plugins'
-import isSearchEngineCrawler from "./check-for-bot-visit"
-
-import Physics from "./services/physics"
 
 // Locale i18n packages
 import { createI18n } from "vue-i18n"
@@ -56,10 +53,14 @@ const i18n = createI18n({
 const app = createApp(App)
 app.config.globalProperties.$text  = $text
 
-// Only add physics if the visitor is not a bot
-if (!isSearchEngineCrawler().isCrawler) {
-    Physics.start(router)
+if (!window.location.hostname.includes("localhost")) {
+    console.info = () => {} // noop in productie
 }
+
+// Only add physics if the visitor is not a bot
+// if (!isSearchEngineCrawler().isCrawler) {
+//     Physics.start(router)
+// }
 
 const head = createHead({
     plugins: [

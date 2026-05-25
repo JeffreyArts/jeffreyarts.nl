@@ -9,7 +9,7 @@ import _ from "lodash"
 export class AuthModel {
     self: UserModel | undefined
     baseUrl: string
-    refreshTimeout: number |  NodeJS.Timeout
+    refreshTimeout: number |  ReturnType<typeof setTimeout>
     // refreshToken: string
     authToken: string
     axios: AxiosInstance
@@ -61,10 +61,10 @@ export class AuthModel {
         }
     }
 
-    setSelf(userData?: { [key:string]: any }, cleanDefaultPassword?: boolean) {
+    setSelf(userData: { [key:string]: any }, cleanDefaultPassword?: boolean) {
 
         const properties = ["id", "username", "email", "catterpillar", "defaultPassword", "verified"]
-
+        
         // Check if user is anonymous
         if (localStorage.getItem("self")) {
             if (!userData) {
@@ -88,21 +88,8 @@ export class AuthModel {
             ...self,
             self: true
         })
-
-        if (PhysicsService.physics) {
-
-            let catterpillarOptions = {x: document.body.clientWidth/2, y: 8, autoBlink: true} as CatterpillarOptions
-            if (this.self?.catterpillar) {
-                catterpillarOptions = {...catterpillarOptions, ...this.self.catterpillar }
-            }
-
-            // Emit event to update the catterpillar
-            if (!this.catterpillarAdded) {
-                const event = new CustomEvent("addCatterpillar", { detail: {...catterpillarOptions, id: this.self.id} })
-                window.dispatchEvent(event)
-                this.catterpillarAdded = true
-            }
-        }
+        const event = new CustomEvent("addCatterpillar", { detail: {...this.self.catterpillar} })
+        window.dispatchEvent(event)
     }
     
     
@@ -161,6 +148,7 @@ export class AuthModel {
                         this.catterpillarAdded = false
                         window.dispatchEvent(event)
                     }
+                    
                     
                     const cleanDefaultPassword = response.data.user.defaultPassword != options.password
 

@@ -1,10 +1,8 @@
-import Paper from "paper"
 import Matter from "matter-js"
-import Color from "color"
+import { collisionBodyPart } from "@/model/physics/collisions"
 
 export type BodyPartOptions = {
     size: number,
-    stiffness?: number,
     damping?: number,
     slop?: number,
     points?: number,
@@ -12,42 +10,20 @@ export type BodyPartOptions = {
 }
 
 
-interface BodyPart {
+export class BodyPart {
     x: number
     y: number
     radius: number
     body: Matter.Body
-    color:string
     options: {
         restitution: number
         slop: number,
     }
-    section: "bodyPart" | "head" | "butt"
-    paper: paper.Path
+    dev: boolean
+    collisionMask: number
+    type: "bodyPart" | "head" | "butt"
+    world?: Matter.World
 
-}
-
-class BodyPart {
-
-    #generatePaperPath() {
-        const newPath = new Paper.Path.Circle(new Paper.Point(this.x,this.y), this.radius) 
-        const color = Color(this.color)
-        newPath.fillColor = new Paper.Color(color.hex())
-        newPath.strokeColor = new Paper.Color(color.darken(.5).hex())
-        newPath.strokeColor.alpha = .4
-        return newPath
-    }
-
-    #updatePosition() {
-        this.paper.position.x = this.x
-        this.paper.position.y = this.y
-    }
-    #updateColor() {
-        const color = Color(this.color)
-        this.paper.fillColor = new Paper.Color(color.hex())
-        this.paper.strokeColor = new Paper.Color(color.darken(.5).hex())
-        this.paper.strokeColor.alpha = .4
-    }
 
     constructor (
         options: {
@@ -56,21 +32,32 @@ class BodyPart {
             y?: number,
             restitution?: number,
             slop?: number,
-            color?: string,
-            section?: string
-        }
+            type?: "head" | "butt",
+            // collisionMask?: number  // negative for non-colliding
+        },
+        world?: Matter.World
     ) {
+        this.dev = true
         this.options = {
-            restitution: 1,
-            slop: 1,
+            restitution: 0.8,
+            slop: .01,
         }
 
-        this.section = "bodyPart"
         this.x = options?.x ? options.x : 0
         this.y = options?.y ? options.y : 0
-        this.color = options?.color ? options.color : "#58f208"
         this.radius = options?.radius ? options.radius : 8
+        
+        if (world) {
+            this.world = world
+        }
 
+        // Set label
+        this.type = "bodyPart"
+        if (options?.type) {
+            this.type = options.type
+        }
+        
+        
         if (options?.restitution) {
             this.options.restitution = options.restitution
         }
@@ -79,38 +66,79 @@ class BodyPart {
             this.options.slop = options.slop
         }
         
-        this.body = Matter.Bodies.circle(this.x, this.y, this.radius/2, { 
-            collisionFilter: { 
-                category: 0x0002,
-            }, 
+        const label = this.type == "bodyPart" ? "bodyPart" : `bodyPart,${this.type}`
+
+        // this.collisionGroup = options?.collisionGroup ? options.collisionGroup : 0
+        
+        this.body = Matter.Bodies.circle(this.x, this.y, this.radius, { 
+            collisionFilter: collisionBodyPart,
             mass: 1,
             density: .2,
-            friction: .1,
+            friction: .8,
+            frictionAir: .01,
             restitution: this.options.restitution,
-            slop: this.options.slop ? this.options.slop : this.radius/5,
-            label: this.section
+            slop: .1,
+            label,
+            render: {
+                visible: this.dev,
+            }
         })
 
-        this.paper = this.#generatePaperPath()
-
-        return new Proxy(this, {
-            set: function (target, key, value) {
-                // console.log(`${String(key)} set to ${value}`)
-                if (key === "x" || key === "y") {
-                    target[key] = value
-                    target.#updatePosition()
-                }
-                if (key === "color") {
-                    target[key] = value
-                    target.#updateColor()
-                }
-                return true
-            }
-        }) as BodyPart
+        requestAnimationFrame(() => this.#loop())
     }
 
-    remove() {
-        this.paper.remove()
+
+    #loop() {
+        this.x = this.body.position.x
+        this.y = this.body.position.y
+        
+        // Does not seem relevant (also causes issues with catapult story, deployment of launcherwurmpjes )
+        // if (this.world) {
+        //     const boundaries = this.#getWorldBoundaries()
+        //     // check of body binnen de world boundaries is
+        //     const inside = this.y >= boundaries.top &&
+        //                this.x >= boundaries.left &&
+        //                this.x <= boundaries.right &&
+        //                this.y <= boundaries.bottom
+
+        //     // update collisionFilter.mask dynamisch
+        //     if (inside) {
+        //         this.body.collisionFilter.mask = collisionBodyPart.mask // standaard mask, bv CATEGORY_WALL
+        //     } else {
+        //         this.body.collisionFilter.mask = 0 // bots met niets
+        //     }
+        // }
+        
+
+        requestAnimationFrame(() => this.#loop())
+    }
+
+    #getWorldBoundaries() {
+        if (!this.world) return null
+
+        const walls = Matter.Composite.allBodies(this.world).filter((body) => {
+            return body.label.split(",").includes("wall")
+        })
+
+        let top, bottom, left, right = 0
+        walls.forEach((wall) => {
+            if (wall.label.includes("top")) { 
+                top = wall.bounds.max.y
+            } else if (wall.label.includes("bottom")) {
+                bottom = wall.bounds.min.y
+            } else if (wall.label.includes("left")) {
+                left = wall.bounds.max.x
+            } else if (wall.label.includes("right")) {
+                right = wall.bounds.min.x
+            }
+        })
+
+        return {
+            top,
+            bottom,
+            left,
+            right,
+        }
     }
 }
 

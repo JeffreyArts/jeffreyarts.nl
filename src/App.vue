@@ -17,6 +17,11 @@ import PasswordReset from "@/routes/modals/password-reset.vue"
 import Payload from "@/stores/payload"
 import Locale from "@/stores/locale"
 import gsap from "gsap"
+
+import useIdentityStore from "@/stores/identity"
+import useActionStore from "@/stores/action"
+import useStoryStore from "@/stores/story"
+
 // import { useRouter } from "vue-router"
 
 export default defineComponent({
@@ -32,6 +37,16 @@ export default defineComponent({
             passwordResetToken: "",
             submitText: "Change password"
         }
+    },
+    setup() {
+        
+        const identityStore = useIdentityStore()
+        const actionStore = useActionStore()
+        const storyStore = useStoryStore()
+
+        storyStore.init()
+        actionStore.init()
+        identityStore.init()
     },
     mounted() {
         const payload = Payload()

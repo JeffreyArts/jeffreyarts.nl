@@ -62,7 +62,7 @@ const generateRoutes = async (url, filename) => {
         fs.writeFileSync(filePath, JSON.stringify(result, null, 2), "utf8")
         
         
-        console.log(`${bold(result.length)} routes found for '${bold(filename)}' and added to '${filePath}'`)
+        console.info(`${bold(result.length)} routes found for '${bold(filename)}' and added to '${filePath}'`)
     } catch (error) {
         console.error("Error fetching data:", error)
     }
