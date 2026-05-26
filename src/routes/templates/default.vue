@@ -34,27 +34,27 @@ import { BlockType } from "@/components/layout/layout-types"
 import useIdentityStore from "@/stores/identity"
 import { type IdentityField } from "@/model/catterpillar/identity"
 
-const setMeta = (route: RouteLocationNormalizedLoaded) => {
-    const meta = [] as Array<{
-        name: string,
-        content: string
-    }>
+// const setMeta = (route: RouteLocationNormalizedLoaded) => {
+//     const meta = [] as Array<{
+//         name: string,
+//         content: string
+//     }>
 
-    if (typeof route.meta?.description === "string" && route.meta.description.length > 0) {
-        meta.push({
-            name: "description",
-            content: route.meta.description
-        })
-    }
+//     if (typeof route.meta?.description === "string" && route.meta.description.length > 0) {
+//         meta.push({
+//             name: "description",
+//             content: route.meta.description
+//         })
+//     }
 
-    if (typeof route.meta?.keywords === "string" && route.meta.keywords.length > 0) {
-        meta.push({
-            name: "keywords",
-            content: route.meta.keywords
-        })
-    }
-    return meta
-} 
+//     if (typeof route.meta?.keywords === "string" && route.meta.keywords.length > 0) {
+//         meta.push({
+//             name: "keywords",
+//             content: route.meta.keywords
+//         })
+//     }
+//     return meta
+// } 
 
 export default defineComponent ({ 
     name: "defaultTemplate",
@@ -70,14 +70,21 @@ export default defineComponent ({
         const Payload = payloadStore()
         const route = useRoute()
         const identityStore = useIdentityStore()
-        const title = route.name as string
-        
+        let title = route.name as string
+       
+        if (Payload.page?.data?.pageTitle) {
+            title = Payload.page.data.pageTitle
+        }
+
         return{
             Payload,
             identityStore,
             head:  useHead({
                 title,
-                meta: setMeta(route)
+                link: [
+                    { rel: 'canonical', href: route.fullPath }
+                ],
+                meta: []
             }) 
         } as {
             Payload: ReturnType<typeof payloadStore>,
@@ -102,6 +109,7 @@ export default defineComponent ({
             is404: false,
             pageLoaded: false,
             pageSwitchIndex: 0,
+            meta: [] as Array<{ name: string, content: string }>,
             abortController: null as AbortController | null,
             fadeOutTimeout: undefined as undefined | ReturnType<typeof setTimeout>,
             pageIsLoading: null as ReturnType<typeof setTimeout> | null,
@@ -129,24 +137,48 @@ export default defineComponent ({
                     duration: .8,      // Duration of the animation in seconds
                     ease: "sine.out"  // Use the bounce easing for the effect
                 });
+                
+                if (!this.Payload.page?.data) return
 
-                if (this.head) {
-                    this.head.patch({
-                        title: this.$route.name,
-                        meta: setMeta(this.$route)
+                const newHead = {
+                    meta: this.meta,
+                    link: [ { rel: 'canonical', href: this.$route.fullPath } ]
+                } as {
+                    title?: string,
+                    meta?: Array<{
+                        name: string,
+                        content: string
+                    }>,
+                    link: Array<{ rel: string, href: string }>
+                }
+
+                if (this.Payload.page.data.title) {
+                    newHead.title = this.Payload.page.data.title
+                }
+
+                if (this.Payload.page.data.pageTitle) {
+                    newHead.title = this.Payload.page.data.pageTitle
+                }
+
+                if (this.Payload.page.data.metaDescription) {
+                    this.meta.push({
+                        name: "description",
+                        content: this.Payload.page.data.metaDescription
+                    })
+                } 
+
+                if (this.Payload.page.data.metaTags) {
+                    this.meta.push({
+                        name: "keywords",
+                        content: this.Payload.page.data.metaTags.join(", ")
                     })
                 }
+
+                this.head.patch(newHead)
+                
             }, 
             immediate: true
         },
-        // "Payload.auth": {
-        //     handler() {
-        //         console.log("Auth state changed, updating identity", this.Payload.auth,this.Payload.auth.self)    
-        //         this.updateIdentity()
-        //     },
-        //     deep: true,
-        //     immediate: true
-        // }
     },
     mounted() {
         if (typeof window === "undefined") {
