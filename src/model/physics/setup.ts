@@ -89,11 +89,14 @@ export class MatterSetup {
         window.addEventListener("pointermove", this.#onPointerMove.bind(this))
         window.addEventListener("resize", this.#onResize.bind(this))
     }
-    #animate = () => {
-        Matter.Engine.update(this.engine, 1000 / 40) // update engine met 40 fps
+    
+    private lastTime: number = 0
+    #animate = (timestamp: number) => {
+        const delta = Math.min(timestamp - this.lastTime, 60) // max 30ms
+        this.lastTime = timestamp
+        Matter.Engine.update(this.engine, delta)
         requestAnimationFrame(this.#animate)
     }
-
     
     #disableScrollToRefresh(event: TouchEvent) {
         const target = event.target as HTMLElement
