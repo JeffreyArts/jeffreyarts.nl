@@ -12,6 +12,7 @@ import { NewsletterBlock } from "./blocks/newsletter.vue"
 import { NoteBlock } from "./blocks/note.vue"
 import { FavoriteBlock } from "./blocks/favorite.vue"
 import { PageCommentsBlock } from "./blocks/page-comments.vue"
+import { ProductCatalogBlock } from "./blocks/product-catalog.vue"
 import { ProjectThumbnailBlock } from "./blocks/project-thumbnail.vue"
 import { ProjectArticleBlock } from "./blocks/project-article.vue"
 import { PieceThumbnailBlock } from "./blocks/piece-thumbnail.vue"
@@ -28,7 +29,7 @@ export interface LayoutOptions {
     blocks: Array<BlockType>
 }
 
-export type BlockTypeData = AsciiBlock | BannerBlock | CodeBlock | CovidStarBlock | FavoriteBlock | GlitchBlock | IframeBlock | ImageBlock | LineBlock | Model3DBlock | NewsletterBlock | NoteBlock | PageCommentsBlock | PieceThumbnailBlock | ProjectArticleBlock | ProjectThumbnailBlock | TagsBlock | TextBlock | TitleBlock | YearBlock  | YoutubeBlock
+export type BlockTypeData = AsciiBlock | BannerBlock | CodeBlock | CovidStarBlock | FavoriteBlock | GlitchBlock | IframeBlock | ImageBlock | LineBlock | Model3DBlock | NewsletterBlock | NoteBlock | PageCommentsBlock | PieceThumbnailBlock | ProductCatalogBlock | ProjectArticleBlock | ProjectThumbnailBlock |  TagsBlock | TextBlock | TitleBlock | YearBlock  | YoutubeBlock
 
 export type BlockType = {
     size: number

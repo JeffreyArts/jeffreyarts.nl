@@ -18,7 +18,8 @@
         <CodeBlock @blockLoaded="blockLoaded" :options="data" v-if="data.blockType === 'code'"                  :data-blocktype="data.blockType"/>
         <FavoriteBlock @blockLoaded="blockLoaded" :options="data" v-if="data.blockType === 'favorite'"          :data-blocktype="data.blockType"/>
         <PageCommentsBlock @blockLoaded="blockLoaded" :options="data" v-if="data.blockType === 'pageComments'"  :data-blocktype="data.blockType"/>
-        <PieceThumbnailBlock @blockLoaded="blockLoaded" :options="data" v-if="data.blockType === 'pieceThumbnail'"      :data-blocktype="data.blockType"/>
+        <PieceThumbnailBlock @blockLoaded="blockLoaded" :options="data" v-if="data.blockType === 'pieceThumbnail'"  :data-blocktype="data.blockType"/>
+        <ProductCatalogBlock @blockLoaded="blockLoaded" :options="data" v-if="data.blockType === 'productCatalog'"  :data-blocktype="data.blockType"/>
         <ProjectThumbnailBlock @blockLoaded="blockLoaded" :options="data" v-if="data.blockType === 'projectThumbnail'"  :data-blocktype="data.blockType"/>
         <ProjectArticleBlock @blockLoaded="blockLoaded" :options="data" v-if="data.blockType === 'projectArticle'"  :data-blocktype="data.blockType"/>
     </div>
@@ -43,6 +44,7 @@ import Model3DBlock from "./model-3d.vue"
 import FavoriteBlock from "./favorite.vue"
 import PageCommentsBlock from "./page-comments.vue"
 import PieceThumbnailBlock from "./piece-thumbnail.vue"
+import ProductCatalogBlock from "./product-catalog.vue"
 import ProjectThumbnailBlock from "./project-thumbnail.vue"
 import ProjectArticleBlock from "./project-article.vue"
 import YoutubeBlock from "./youtube.vue"
@@ -66,6 +68,7 @@ export default defineComponent ({
         FavoriteBlock,
         PageCommentsBlock,
         PieceThumbnailBlock,
+        ProductCatalogBlock,
         ProjectThumbnailBlock,
         ProjectArticleBlock,
         TagsBlock,
