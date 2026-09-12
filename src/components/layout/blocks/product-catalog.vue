@@ -1,34 +1,64 @@
 <template>
     <div class="product-catalog-block">
-        TEST
+        <div class="filter"></div>
+        <div class="product-catalog" v-if="options.products.length > 0">
+            <productThumbnail v-for="product in options.products" :options="product"></productThumbnail>
+
+        </div>
     </div>
 </template>
 
 <script lang="ts">
 import { defineComponent, PropType } from "vue"
-
+import PayloadStore from "@/stores/payload"
+import { MediaImage, Product } from "@/types/payload-stores"
+import productThumbnail from "./product-thumbnail.vue"
 
 export type ProductCatalogBlock = {
     blockType: "productCatalog"
-    products: {name: string, url: string}[]
+    products: Product[]
 }
 
 export default defineComponent ({
     name: "productCatalogBlock",
+    data: function() {
+        return {
+            hasEmittedBlockLoaded: false
+        }
+    },
+    components: {productThumbnail},
     watch: {
         "options": {
             handler() {
+                if (!Array.isArray(this.options.products)) {
+                    if (typeof this.options.products !== "undefined") {
+                        this.options.products = [ this.options.products ]
+                    } else {
+                        this.options.products = []
+                    }
+                }
                 this.$nextTick(() => {
-                    this.$emit("blockLoaded")
+                    this.emitBlockLoaded()
                 })
             },
             deep: true,
             immediate: true
         }
     },
+    setup() {
+        const payload = PayloadStore()
+        return { payload }    
+    },
+    async beforeCreate() {
+        if (!this.options.products) {
+            this.payload.GET("products?depth=0").then(res => {
+                this.options.products = res.data.docs
+                this.emitBlockLoaded()
+            })
+        }
+    },
     mounted() {
-        console.log("Tihii")
-            this.$emit("blockLoaded")
+        this.emitBlockLoaded()
     },
     props: {
         options: {
@@ -37,8 +67,11 @@ export default defineComponent ({
         },
     },
     methods: {
-        textLoaded() {
-            this.$emit("blockLoaded")
+        emitBlockLoaded() {
+            if (!this.hasEmittedBlockLoaded) {
+                this.$emit("blockLoaded")
+                this.hasEmittedBlockLoaded = true
+            }
         }
     }
 })
@@ -47,26 +80,32 @@ export default defineComponent ({
 
 <style lang="scss">
 @use "./../../../assets/scss/variables";
-.tags-block {
-    width: 100%;
+.product-catalog {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    justify-content: start; 
+}
 
-    a {
-        line-height: 1.28;
-        padding: 4px 8px;
-        display: inline-block;
-        font-size: 14px;
-        font-family: var(--accent-font);
-        text-decoration: none;
-        color: var(--bg-color);
-        background-color: var(--contrast-color);
-        margin-right: 4px;
-        margin-bottom: 4px;
-        transition: background-color 0.16s ease;
-
-        &:hover, &:focus {
-            background-color: var(--accent-color);
-        }
-    }
+@media all and (min-width: 360px) {
+    .product-catalog { grid-template-columns: repeat(2, 1fr); }
+}
+@media all and (min-width: 720px) {
+    .product-catalog { grid-template-columns: repeat(3, 1fr); }
+}
+@media all and (min-width: 1080px) {
+    .product-catalog { grid-template-columns: repeat(4, 1fr); }
+}
+@media all and (min-width: 1440px) {
+    .product-catalog { grid-template-columns: repeat(5, 1fr); }
+}
+@media all and (min-width: 1800px) {
+    .product-catalog { grid-template-columns: repeat(6, 1fr); }
+}
+@media all and (min-width: 2160px) {
+    .product-catalog { grid-template-columns: repeat(7, 1fr); }
+}
+@media all and (min-width: 2520px) {
+    .product-catalog { grid-template-columns: repeat(8, 1fr); }
 }
 
 </style>

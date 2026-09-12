@@ -62,74 +62,13 @@ import { defineComponent, PropType } from "vue"
 import jaoIcon from "@/components/jao-icon.vue"
 import { Icon } from "jao-icons"
 import highlightjs from "./../../highlightjs.vue"
+import { Piece } from "@/types/payload-stores"
 import { FavoritesService } from "@/services/favorites"
 
-export type IframeProperties = {
-    url:string
-    image?: ImageProperties
-}
-
-export type YoutubeProperties = {
-    url: string
-    ratio: string
-}
-
-export type CodeProperties = {
-    title: string
-    link: string
-    language: "typescript" | "javascript" | "arduino" | "bash" | "css" | "html" | "php"
-    code: string
-}
-
-export type ImageProperties = {
-    focalX: number
-    focalY: number
-    height: number
-    width: number
-    mimeType: number
-    url: string
-    filename: string
-    sizes: {
-        image_sm: {
-            width: number
-            height: number
-            url: string
-        }
-        image_md: {
-            width: number
-            height: number
-            url: string
-        }
-        image_lg: {
-            width: number
-            height: number
-            url: string
-        }
-    }
-}
 
 export type PieceThumbnailBlock = {
     blockType: "pieceThumbnail"
-    piece: {
-        id: string
-        type: string
-        path: string
-        title: string
-        year: string
-        favs: number
-        categories?: Array<{
-            id: string
-            title: string
-        }>
-        series?: Array<{
-            id: string
-            title: string
-        }>
-        youtubeProperties: YoutubeProperties,
-        imageProperties: {image: ImageProperties},
-        codeProperties: CodeProperties,
-        iframeProperties: IframeProperties
-    }
+    piece: Piece
 }
 
 export default defineComponent ({

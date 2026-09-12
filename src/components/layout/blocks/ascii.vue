@@ -13,14 +13,7 @@
 import { defineComponent, PropType } from "vue"
 import PayloadStore from "@/stores/payload"
 import gsap from "gsap"
-
-export type MediaSize = {
-    url: string
-    width: number
-    height: number
-    filesize: number
-    filename: string
-}
+import { MediaImage } from "@/types/payload-stores"
 
 export type AsciiBlock = {
     blockType: "ascii"
@@ -35,25 +28,7 @@ export type AsciiBlock = {
         value: string
         custom?: string
     }
-    image: {
-        id: string
-        url: string
-        filename: string
-        mimeType: string
-        filesize: number
-        createdAt: string
-        updatedAt: string
-        thumbnailURL: string
-        sizes: {
-            banner_sm: MediaSize
-            banner_md: MediaSize
-            banner_lg: MediaSize
-            image_sm: MediaSize
-            image_md: MediaSize
-            image_lg: MediaSize
-            thumbnail: MediaSize
-        }
-    }
+    image: MediaImage
 }
 
 export default defineComponent ({
