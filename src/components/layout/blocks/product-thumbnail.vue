@@ -27,6 +27,7 @@ export default defineComponent ({
     watch: {
     },
     mounted() {
+        this.loadImage();
     },
     computed: {
         title() {
@@ -39,7 +40,15 @@ export default defineComponent ({
             if (!this.options) {
                 return "#ERROR"
             }
-            return `€ ${this.options.price},-`
+            const formatted = new Intl.NumberFormat("nl-NL", {
+                style: "currency",
+                currency: "EUR",
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            }).format(this.options.price)
+
+            // €1.000,00 -> €1.000,-
+            return formatted.replace(",00", ",-")
         },
         image() {
             if (!this.options){
@@ -71,7 +80,6 @@ export default defineComponent ({
             const img = this.$refs["image"] as HTMLImageElement;
             
             if (!img) {
-                this.$emit("blockLoaded");
                 return;
             }
 
@@ -79,9 +87,7 @@ export default defineComponent ({
             img.addEventListener("error", this.loadHandler);
             
             if (img.complete && img.src) {
-                setTimeout(() => {
-                    this.$emit("blockLoaded");
-                }, 0)
+                setTimeout(this.loadHandler, 0)
                 return;
             }
         },

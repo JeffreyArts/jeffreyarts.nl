@@ -2,7 +2,7 @@
     <div class="product-catalog-block">
         <div class="filter"></div>
         <div class="product-catalog" v-if="options.products.length > 0">
-            <productThumbnail v-for="product in options.products" :options="product"></productThumbnail>
+            <productThumbnail v-for="product in options.products" :options="product" @blockLoaded="blockLoaded(block)"></productThumbnail>
 
         </div>
     </div>
@@ -23,7 +23,8 @@ export default defineComponent ({
     name: "productCatalogBlock",
     data: function() {
         return {
-            hasEmittedBlockLoaded: false
+            hasEmittedBlockLoaded: false,
+            thumbnailsLoaded: 0
         }
     },
     components: {productThumbnail},
@@ -37,9 +38,6 @@ export default defineComponent ({
                         this.options.products = []
                     }
                 }
-                this.$nextTick(() => {
-                    this.emitBlockLoaded()
-                })
             },
             deep: true,
             immediate: true
@@ -51,14 +49,12 @@ export default defineComponent ({
     },
     async beforeCreate() {
         if (!this.options.products) {
-            this.payload.GET("products?depth=0").then(res => {
+            this.payload.GET("products?depth=1").then(res => {
                 this.options.products = res.data.docs
-                this.emitBlockLoaded()
             })
         }
     },
     mounted() {
-        this.emitBlockLoaded()
     },
     props: {
         options: {
@@ -72,6 +68,12 @@ export default defineComponent ({
                 this.$emit("blockLoaded")
                 this.hasEmittedBlockLoaded = true
             }
+        },
+        blockLoaded(b) {
+            this.thumbnailsLoaded ++
+            if (this.thumbnailsLoaded == this.options.products.length) {
+                this.emitBlockLoaded()
+            }
         }
     }
 })
@@ -84,6 +86,7 @@ export default defineComponent ({
     display: grid;
     grid-template-columns: repeat(1, 1fr);
     justify-content: start; 
+    gap: 40px;
 }
 
 @media all and (min-width: 360px) {
