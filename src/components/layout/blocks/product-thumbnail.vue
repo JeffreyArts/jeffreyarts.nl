@@ -115,6 +115,12 @@ export default defineComponent ({
         margin: 0;
         overflow: hidden;
         width: 100%;
+        display: flex;
+        aspect-ratio: 1;
+
+        img {
+            object-fit: cover;
+        }
     }
 
     &:hover, &:focus {

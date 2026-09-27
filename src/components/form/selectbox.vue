@@ -222,9 +222,9 @@ export default defineComponent({
     width: 100%;
     overflow: auto;
     background-color: #fff;
-    gap: 8px;
+    gap: 0;
     flex-flow: row wrap;
-    padding: 4px 0;
+    padding: 0 0;
     outline: 1px solid #777;
 }
 
@@ -244,15 +244,15 @@ export default defineComponent({
     width: 100%;
     display: grid;
     align-items: center;
-    padding: 8px 4px;
+    padding: 12px 8px;
     gap: 8px;
     grid-template-columns: 18px 1fr;
 
     // This needs to be updated
-    // &:hover {
-    //     color: var(--bg-color);
-    //     background-color: var(--contrast-color);
-    // }
+    &:hover {
+        color: var(--contrast-color);
+        background-color: var(--secondary-bg-color);
+    }
 
     &.__isHidden {
         display: none;

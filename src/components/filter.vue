@@ -635,7 +635,7 @@ export default defineComponent({
     display: flex;
     width: calc(50% - 16px);
     flex-flow: row;
-    align-items: center;
+    align-items: flex-start;
     gap: 8px;
     justify-content: space-between;
     position: relative;

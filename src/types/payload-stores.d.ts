@@ -57,6 +57,7 @@ export type Product = {
     createdAt: string,
     updatedAt: string,
     title: string,
+    year: string | Array<string>,
     subtitle?: string, 
     price: number, 
     details: Array<{ name: string, value: string, id: string}>,

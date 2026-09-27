@@ -1,14 +1,14 @@
 <template>
-    <label class="checkbox" :class="modelValue ? '__isSelected' : ''">
+    <label class="checkbox" :class="modelValue ? '__isSelected' : ''" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
         <span class="checkbox-label">
             {{name}}
         </span>
         <span class="checkbox-symbol">
             <jaoIcon
                 size="medium"
-                :active-color="modelValue ? '#222' : '#555'"
+                :active-color="activeColor"
                 :name="modelValue ? 'checkbox-cross' : 'checkbox'"
-                :transit-effect="{ duration: .1, delay:.002, effect: 'left-to-right'}" 
+                :transit-effect="transitEffect" 
                 />
             <input type="checkbox" @change="changeInput($event)">
         </span>
@@ -25,6 +25,12 @@ export default defineComponent({
     components: {
         jaoIcon
     },
+    data() {
+        return {
+            activeColor: "#222",
+            transitEffect: { duration: .1, delay:.002, effect: 'left-to-right'}
+        }
+    },
     props: {
         name: {
             type: String,
@@ -34,8 +40,29 @@ export default defineComponent({
             type: Boolean,
             required: true
         },
+        position: {
+            type: String,
+            required: false
+        }
     },
     methods: {
+        onMouseEnter(e: Event) {
+            if (this.modelValue) {
+                this.activeColor = "var(--accent-color)"
+            } else {
+                this.activeColor = "var(--accent-color)"
+            }
+            this.transitEffect.effect = "right-to-left"
+
+        },
+        onMouseLeave(e: Event) {
+            if (this.modelValue) {
+                this.activeColor = "#222"
+            } else {
+                this.activeColor = "#555"
+            }
+            this.transitEffect.effect = "left-to-right"
+        },
         changeInput(e:Event) {
             const target = e.target as HTMLInputElement
             
@@ -59,6 +86,11 @@ export default defineComponent({
     }
     svg {
         height: 18px;
+    }
+
+    &:hover {
+        color: var(--accent-color);
+        cursor: pointer;
     }
 }
 
