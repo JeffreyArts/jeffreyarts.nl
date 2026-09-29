@@ -53,6 +53,52 @@ export type Piece = {
 
 }
 
+export type Project = {
+    id: string
+    path: string
+    archived: boolean
+    categories: Array<{
+        id: string
+        title: string
+    }>
+    series: Array<{
+        id: string
+        title: string
+    }>
+    year: {
+        from: string | number
+        to: string | number
+    }
+    title: string
+    description: SlateNode
+    thumbnail: {
+        width: number
+        height: number
+        filename: string
+        mimeType: string
+        title: string
+        description: string
+        url: string
+        sizes: {
+            image_sm: {
+                width: number
+                height: number
+                url: string
+            }
+            image_md: {
+                width: number
+                height: number
+                url: string
+            }
+            image_lg: {
+                width: number
+                height: number
+                url: string
+            }
+        }
+    }
+}
+
 export type Product = {
     createdAt: string,
     updatedAt: string,
@@ -66,6 +112,6 @@ export type Product = {
     metaDescription?: string,
     metaTags?: Array<string>,
     path: string,
-    piece?: string | {id: string},
-    project?: string | {id: string},
+    piece?: string | Piece,
+    project?: string | Project,
 } 

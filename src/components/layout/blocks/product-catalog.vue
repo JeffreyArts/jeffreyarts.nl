@@ -12,6 +12,12 @@
                         :options="filterOptions.years"
                         />
                         <!-- @change="updateYear" -->
+                    
+                    <selectBox
+                        class="site-filter-section"
+                        name="Category"
+                        :options="filterOptions.categories"
+                        />
 
                     <div class="product-catalog-filter-option-checkbox">
                         <label for="site-filter-price">Price</label>
@@ -35,12 +41,16 @@
                                 v-model="priceHigh"
                                 :class="[priceHigh ? '__isSelected' : '']" />
                         </div>
-                            
                     </div>
                 </div>
             </div>
-            <div class="product-catalog" v-if="options.products.length > 0">
+            <div class="product-catalog" v-if="filteredProducts.length > 0">
                 <productThumbnail v-for="product in filteredProducts" :options="product" @blockLoaded="blockLoaded(block)"></productThumbnail>
+            </div>
+            <div class="product-catalog __noProducts" v-if="filteredProducts.length <= 0">
+                <p>
+                    No product(s) found with these criteria
+                </p>
             </div>
         </div>
     </div>
@@ -70,6 +80,7 @@ export default defineComponent ({
             priceHigh: false,
             filterOptions: {
                 years: [] as SelectBoxOptions[],
+                categories: [] as SelectBoxOptions[],
                 price: [] as Array<"high" | "mid" | "low">
             }
         }
@@ -82,7 +93,7 @@ export default defineComponent ({
 
             const selectedYears = this.filterOptions.years
                 .filter(year => year.selected)
-                .map(year => String(year.value))
+                .map(year => year.value)
 
             
             const activePriceFilters = {
@@ -90,6 +101,10 @@ export default defineComponent ({
                 mid: this.priceMid,
                 high: this.priceHigh,
             }
+
+            const selectedCategories = this.filterOptions.categories
+                .filter(category => category.selected)
+                .map(category => category.value)
 
             // Update result based on years
             if (selectedYears.length > 0) {
@@ -99,7 +114,7 @@ export default defineComponent ({
                     if (Array.isArray(product.year))  {
                         years = product.year.map(String)  
                     }  else {
-                        years = [ String(product.year) ]
+                        years = [product.year]
                     } 
                     
                     return years.some(year => selectedYears.includes(year))
@@ -121,6 +136,19 @@ export default defineComponent ({
                         if (range === "high") return price > 480
                         return false
                     })
+                })
+            }
+
+            // Update result based on selected categories
+            if (selectedCategories.length > 0) {
+                res = res.filter(product => {
+                    if (product.project) {
+                        if (typeof product.project === "string")  {
+                            return selectedCategories.includes(product.project)
+                        } else if (product.project && typeof product.project == "object") {
+                            return selectedCategories.includes(product.project.id)
+                        }
+                    }
                 })
             }
 
@@ -168,6 +196,22 @@ export default defineComponent ({
                             }
                         })
                     }
+                    
+                    if (typeof v.project == "object" && v.project){
+                        if (this.filterOptions.categories.filter(y => {
+                            if (typeof v.project === "object" && v.project ) {
+                                return y.value == v.project.id
+                            }
+                        }).length <= 0) {
+                            this.filterOptions.categories.push({
+                                value: v.project.id,
+                                label: v.project.title,
+                                selected: false,
+                                available: true
+                            })
+                        }
+                    }
+
                 })
             })
         }
@@ -208,6 +252,7 @@ export default defineComponent ({
     display: grid;
     grid-template-columns: auto;
     gap: 40px;
+    min-height:calc(100dvh - 148px);
 }
         
 .product-catalog-filter {
@@ -217,8 +262,13 @@ export default defineComponent ({
         padding: 16px 32px;
         margin: 0;
         font-weight: normal;
+        font-size: 20px;
+        font-family: var(--accent-font);
     }
 
+    hr {
+        margin: 0;
+    }
 }
 
 .product-catalog {
@@ -226,6 +276,21 @@ export default defineComponent ({
     grid-template-columns: repeat(1, 1fr);
     justify-content: start;
     gap: 40px;
+    margin-bottom: 32px;
+
+    &.__noProducts {
+        grid-template-columns:  1fr;
+        align-items: center;
+        justify-content: center;
+
+        p {
+            display: inline-block;
+            margin: auto;
+            background-color: var(--secondary-bg-color);
+            color: #777;
+            padding: 24px 40px;
+        }
+    }
 }
 
 .product-catalog-filter-options {

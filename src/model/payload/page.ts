@@ -2,7 +2,7 @@ import axios from "axios";
 import _ from "lodash";
 
 import { BlockType } from "@/components/layout/layout-types";
-import ProjectType  from "./../../types/project";
+import Project  from "@/types/payload-stores";
 import { FilterOptions } from "@/components/filter.vue";
 
 export interface PageType {
@@ -24,7 +24,7 @@ export interface PageType {
     metaTags: string[];
     pageTitle: string;
     archived?: boolean;
-    project?: ProjectType;
+    project?: Project;
     displayFilters?: boolean;
     filter?: FilterOptions;
     custom?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -83,7 +83,7 @@ export class PayloadPageModel {
         }
     }
 
-    // async getProjectsPage(): Promise<Array<ProjectType>> {
+    // async getProjectsPage(): Promise<Array<Project>> {
     //     const collection = "project-positions";
 
     //     try {
@@ -112,7 +112,7 @@ export class PayloadPageModel {
     //             }
 
     //             return _.pick(project, ["id", "title", "year", "thumbnail", "path", "description"]);
-    //         }) as Array<ProjectType>;
+    //         }) as Array<Project>;
     //     } catch (error) {
     //         throw new Error(error);
     //     }

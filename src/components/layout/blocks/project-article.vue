@@ -20,13 +20,13 @@ import SlateText, { SlateNode } from "@/components/slate-text.vue"
 import * as jaoIcons from "jao-icons"
 import jaoIcon from "@/components/jao-icon.vue"
 import DynamicImage from "@/components/dynamic-image.vue"
-import ProjectType  from "./../../../types/project"
+import Project from "@/types/payload-stores"
 
 export type ProjectArticleBlock = {
     blockType: "projectArticle"
     hideDescription: boolean
     customDescription: SlateNode
-    project: ProjectType
+    project: Project
 }
 
 export default defineComponent ({

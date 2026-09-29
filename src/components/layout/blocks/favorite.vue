@@ -10,12 +10,12 @@ import { defineComponent, PropType } from "vue"
 import Payload from "@/stores/payload"
 import { Icon } from "jao-icons"
 import jaoIcon from "@/components/jao-icon.vue"
-import ProjectType  from "../../../types/project"
 import { FavoritesService } from "@/services/favorites"
+import Project from "@/types/project"
 
 export type FavoriteBlock = {
     blockType: "favorite"
-    project: ProjectType
+    project: Project
 }
 
 export default defineComponent ({
