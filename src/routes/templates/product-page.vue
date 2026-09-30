@@ -1,23 +1,37 @@
 <template>
     <section class="product-page-template" v-if="!is404">
         <Breadcrumbs v-if="!isInIframe"/>
+        <div class="product-page">
+            
+            <figure class="product-page-thumbnails">
+                <img v-if="selectedImage"
+                    :src="generateImageUrl(selectedImage)"
+                    :srcset="generateSourceSet(selectedImage)"
+                    class="main-image"
+                    >
+                <img 
+                    :src="generateImageUrl(media)"
+                    :srcset="generateSourceSet(media)"
+                    @click="changeImage(media)"
+                    :class="selectedImage?.id == media.id ? '__isSelected' : ''"
+                    v-if="product.images.length > 0" v-for="(media, index) in product.images"
+                    :key="index">
+                <!-- <pre>{{ product }}</pre> -->
+            </figure>
 
-        <figure class="product-page-thumbnails">
-            <img v-if="selectedImage"
-                :src="generateImageUrl(selectedImage)"
-                :srcset="generateSourceSet(selectedImage)"
-                class="main-image"
-                >
-            <img 
-                :src="generateImageUrl(media)"
-                :srcset="generateSourceSet(media)"
-                @click="selectedImage = media"
-                :test="selectedImage?.id + '==' + media.id"
-                :class="selectedImage?.id == media.id ? '__isSelected' : ''"
-                v-if="product.images.length > 0" v-for="(media, index) in product.images"
-                :key="index">
-            <!-- <pre>{{ product }}</pre> -->
-        </figure>
+            <div class="product-page-content">
+                <h1>{{ product.title }}</h1>
+                
+                <div class="product-page-details">
+
+                <SlateText class="product-description" v-if="product.description" :data="product.description " />
+                    
+                </div>
+            </div>
+
+            <IframeBlock v-if="pieceIframe"  :options="pieceIframe" />
+            
+        </div>
     </section>
     <MatterBox v-if="identity && !isInIframe" :identity="identity"></MatterBox>
     <page404 v-if="is404"/>
@@ -38,6 +52,8 @@ import Breadcrumbs from "@/components/breadcrumbs.vue"
 import FilterComponent from "@/components/filter.vue"
 import Layout from "@/components/layout/index.vue"
 import page404 from "@/routes/error-404.vue"
+import IframeBlock from "@/components/layout/blocks/iframe.vue";
+import SlateText from "@/components/slate-text.vue"
 
 import useIdentityStore from "@/stores/identity"
 import { type IdentityField } from "@/model/catterpillar/identity"
@@ -51,7 +67,9 @@ export default defineComponent ({
         Layout,
         page404,
         FilterComponent,
-        MatterBox
+        MatterBox,
+        SlateText,
+        IframeBlock
     },
     props: [],
     setup() {
@@ -94,6 +112,18 @@ export default defineComponent ({
         return {
             breakpoint: "",
             selectedImage: undefined as undefined | MediaImage,
+            pieceIframe: undefined as undefined | {
+                blockType: `iframe`,
+                id: `block-1234`,
+                size: 12,
+                title: string,
+                url: string,
+                showRefresh: true,
+                autoScaling: `1`,
+                portraitRatio: '3/4',
+                landscapeRatio: '16/9'
+                
+            },
             product: {
                 images: [] as MediaImage[],
                 title: "",
@@ -186,13 +216,15 @@ export default defineComponent ({
         gsap.registerPlugin(ScrollToPlugin);
 
         window.addEventListener("addCatterpillar", this.updateIdentity)
-        window.addEventListener("resize", this.updateLayoutSize)
     },
     unmounted() {
         window.removeEventListener("addCatterpillar", this.updateIdentity)
         window.removeEventListener("resize", this.updateLayoutSize)
     },
     methods: {
+        changeImage(image: MediaImage) {
+            this.selectedImage = image
+        },
         generateImageUrl(image: MediaImage) {
             if (!image || !image.sizes) {
                 return ""
@@ -200,7 +232,6 @@ export default defineComponent ({
             return import.meta.env.VITE_PAYLOAD_REST_ENDPOINT.replace("/api","") + image.sizes.image_sm.url
         },
         generateSourceSet(image: MediaImage) {
-            console.log(image)
             if (!image || !image.sizes) {
                 return ""
             }
@@ -268,6 +299,7 @@ export default defineComponent ({
                     title: string
                     subtitle: string
                     piece: Piece,
+                    description: string,
                     images: Array<{id: string, image: MediaImage}>
                 }
 
@@ -278,12 +310,28 @@ export default defineComponent ({
                     details: product.details || [],
                     title: product.title,
                     subTitle: product.subtitle || "",
+                    description: product.description ? product.description : "",
                     pieceUrl: product.piece?.path,
                 }
 
                 if (product.images) {
                     this.product.images = product.images?.map(img => img.image)
                     this.selectedImage = this.product.images[0]
+                }
+                console.log("pieceUrl", this.product.pieceUrl)
+                if (this.product.pieceUrl) {
+                    this.pieceIframe = {
+                        blockType: `iframe`,
+                        id: `block-1234`,
+                        size: 12,
+                        title: this.product.title,
+                        url: this.product.pieceUrl,
+                        showRefresh: true,
+                        autoScaling: `1`,
+                        portraitRatio: '3/4',
+                        landscapeRatio: '16/9'
+                        
+                    }
                 }
                 return
 
@@ -329,6 +377,7 @@ export default defineComponent ({
     display: grid;
     gap: 8px;
     grid-template-columns: repeat(8, 1fr);
+    margin: 0;
 
     img {
         width: 100%;
@@ -360,6 +409,11 @@ export default defineComponent ({
     }
 }
 
+.product-page-details {
+    background-color: var(--bg-color);
+    padding: 0 16px;
+}
+
 @media screen and (min-width: 640px) {
     .site-breadcrumbs {
         margin-left: 16px;
@@ -374,6 +428,19 @@ export default defineComponent ({
 @media screen and (min-width: 800px) {
     .site-breadcrumbs {
         margin-top: 80px;
+    }
+}
+
+
+
+.product-page {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    padding: 16px;
+
+    .iframe-block {
+        grid-column: span 2;
     }
 }
 </style>
