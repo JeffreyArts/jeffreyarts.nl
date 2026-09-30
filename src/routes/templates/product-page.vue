@@ -438,6 +438,8 @@ export default defineComponent ({
     grid-template-columns: 1fr 1fr;
     gap: 40px;
     padding: 16px;
+    margin: auto;
+    max-width: 144vh;
 
     .iframe-block {
         grid-column: span 2;

@@ -96,10 +96,12 @@ export default defineComponent ({
 
         window.addEventListener("layoutChange", this.onLayoutChange)
         window.addEventListener("layoutLoaded", this.onLayoutChange)
+        window.addEventListener("resize", this.onLayoutChange)
     },
     unmounted() {
         window.removeEventListener("layoutChange", this.onLayoutChange)
         window.removeEventListener("layoutLoaded", this.onLayoutChange)
+        window.removeEventListener("resize", this.onLayoutChange)
     },
     methods: {
         refreshIframe(){
