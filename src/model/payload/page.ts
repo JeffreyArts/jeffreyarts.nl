@@ -2,7 +2,7 @@ import axios from "axios";
 import _ from "lodash";
 
 import { BlockType } from "@/components/layout/layout-types";
-import Project  from "@/types/payload-stores";
+import { Product, Project }  from "@/types/payload-stores";
 import { FilterOptions } from "@/components/filter.vue";
 
 export interface PageType {
@@ -40,6 +40,11 @@ export class PayloadPageModel {
         let collection = this.collectionName;
         this.data = undefined
 
+        console.log("Get Page by Path",path)
+        if (path.startsWith("/shop/")) {
+            collection = "products";
+        }
+        
         if (path.startsWith("/project/")) {
             collection = "projects";
         }
@@ -52,20 +57,25 @@ export class PayloadPageModel {
         try {
             const response = await axios.get(`${this.endpoint}/${collection}?where[path][equals]=${path}`);
             const docs = response.data?.docs;
+            console.log(docs)
 
             if (!docs || docs.length !== 1) {
                 throw new Error("Page not found");
             }
-
             const page = docs[0];
-            if (page.blocks.length > 0) {
+
+            if (!page.blocks) {
+                page.blocks = []
+            }
+
+            if (page.blocks && page.blocks.length > 0) {
                 page.blocks = page.blocks.map((block: any, index: number) => ({
                     size: block.size,
                     position: index + 1,
                     id: block.id,
                     data: _.omit(block, ["size", "id"]),
                 })) as Array<BlockType>;
-            }
+            } 
 
             if (page.filter?.show?.filters) {
                 page.filter.displayFilters = page.filter.show.filters;
@@ -82,6 +92,43 @@ export class PayloadPageModel {
             throw error
         }
     }
+    // async getProductPage(path: string): Promise<PageType> {
+    //     let collection = this.collectionName;
+    //     this.data = undefined
+
+    //     try {
+    //         const response = await axios.get(`${this.endpoint}/products?where[path][equals]=${path}`);
+    //         const docs = response.data?.docs;
+
+    //         if (!docs || docs.length !== 1) {
+    //             throw new Error("Page not found");
+    //         }
+
+    //         const page = docs[0];
+    //         if (page.blocks.length > 0) {
+    //             page.blocks = page.blocks.map((block: any, index: number) => ({
+    //                 size: block.size,
+    //                 position: index + 1,
+    //                 id: block.id,
+    //                 data: _.omit(block, ["size", "id"]),
+    //             })) as Array<BlockType>;
+    //         }
+
+    //         if (page.filter?.show?.filters) {
+    //             page.filter.displayFilters = page.filter.show.filters;
+    //             delete page.filter.show;
+    //         }
+            
+    //         this.data = {
+    //             ...page,
+    //             collectionType: collection
+    //         }
+
+    //         return page;
+    //     } catch (error) {
+    //         throw error
+    //     }
+    // }
 
     // async getProjectsPage(): Promise<Array<Project>> {
     //     const collection = "project-positions";

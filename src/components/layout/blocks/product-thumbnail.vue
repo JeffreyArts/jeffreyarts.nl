@@ -1,5 +1,5 @@
 <template>
-    <a href="" class="product-thumbnail-block">
+    <router-link :to="url" class="product-thumbnail-block">
         <figure class="product-thumbnail-image-container">
             <img :src="image" class="product-thumbnail-image" ref="image"/>
         </figure>
@@ -12,7 +12,7 @@
             </span>
         </div>
         <span class="button product-thumbnail-button"><span>view details</span></span>
-    </a>
+    </router-link>
 </template>
 
 <script lang="ts">
@@ -49,6 +49,13 @@ export default defineComponent ({
 
             // €1.000,00 -> €1.000,-
             return formatted.replace(",00", ",-")
+        },
+        url() {
+            if (!this.options) {
+                return ""
+            }
+
+            return this.options.path || ""
         },
         image() {
             if (!this.options){

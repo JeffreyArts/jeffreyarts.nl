@@ -179,6 +179,9 @@ export default defineComponent ({
     },
     async beforeCreate() {
         if (!this.options.products) {
+
+            console.log(this.$route)
+
             this.payload.GET("products?depth=1").then(res => {
                 this.options.products = res.data.docs
 

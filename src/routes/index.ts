@@ -6,6 +6,7 @@ import Favorites from "@/routes/favorites.vue"
 import LivePreview from "@/routes/live-preview.vue"
 import WurmpjeTemplate from "@/routes/templates/wurmpje.vue"
 import Shop from "@/routes/templates/shop.vue"
+import ProductPage from "@/routes/templates/product-page.vue"
 import pageRoutes from "./pages.json"
 import projectRoutes from "./projects.json"
 import pieceRoutes from "./pieces.json"
@@ -13,11 +14,6 @@ import pieceRoutes from "./pieces.json"
 import { createWebHistory, createRouter } from "vue-router"
 
 const routes = [
-    {
-        path: "/:pathMatch(.*)*",
-        // name: "404 | Not found",
-        component: defaultTemplate,
-    },
     {
         path: "/favorites",
         name: "Favorites",
@@ -27,6 +23,11 @@ const routes = [
         path: "/wurmpje",
         name: "Wurmpje's playground",
         component: WurmpjeTemplate,
+    },
+    {
+        path: "/shop/:slug+",
+        name: "Product page",
+        component: ProductPage,
     },
     {
         path: "/shop",
@@ -42,6 +43,11 @@ const routes = [
         path: "/live-preview",
         name: "Live preview",
         component: LivePreview,
+    },
+    {
+        path: "/:pathMatch(.*)*",
+        // name: "404 | Not found",
+        component: defaultTemplate,
     }
 ]
 
