@@ -1,56 +1,8 @@
 <template>
     <section class="product-page-template" v-if="!is404">
         <Breadcrumbs v-if="!isInIframe"/>
-        <div class="product-page" v-if="product.title">
-            <div class="product-page-image">
-                <img v-if="selectedImage"
-                    :src="generateImageUrl(selectedImage)"
-                    :srcset="generateSourceSet(selectedImage)"
-                    :class="['main-image', product.subTitle ? '__hasSubtitle' : '']"
-                    >
-            </div>
-            <div class="product-page-thumbnails-container">
-                <figure class="product-page-thumbnails">
-                    <img 
-                        :src="generateImageUrl(media)"
-                        :srcset="generateSourceSet(media)"
-                        @click="changeImage(media)"
-                        :class="selectedImage?.id == media.id ? '__isSelected' : ''"
-                        v-if="product.images.length >= 0" v-for="(media, index) in product.images"
-                        :key="index">
-                </figure>
-            </div>
 
-            <div class="product-page-content">
-                <h1>{{ product.title }}</h1>
-                <h2 v-if="product.subTitle">{{ product.subTitle }}</h2>
-                
-                <div class="product-page-details">
-                    <div class="product-description">
-                        <SlateText v-if="product.description" :data="product.description" />
-                    </div>
-
-                    <div class="product-page-table" v-if="product.details && product.details.length > 0">
-                        <div class="product-page-table-row" v-for="(detail, index) in product.details" :key="index">
-                            <div class="product-page-table-key">{{ detail.name}}</div>
-                            <div class="product-page-table-value">{{ detail.value }}</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="product-page-purchase-section">
-                    <div class="product-page-price">
-                        {{ price }}
-                    </div>
-                    <div class="product-page-button-container">
-                        <a :href="purchaseLink" class="button">Enquire</a>
-                    </div>
-                </div>
-            </div>
-
-            <IframeBlock v-if="pieceIframe"  :options="pieceIframe" />
-            
-        </div>
+            <ProductPage :product="product" v-if="product"></ProductPage>
     </section>
     <MatterBox v-if="identity && !isInIframe" :identity="identity"></MatterBox>
     <page404 v-if="is404"/>
@@ -78,9 +30,11 @@ import useIdentityStore from "@/stores/identity"
 import { type IdentityField } from "@/model/catterpillar/identity"
 import { Piece, MediaImage } from "@/types/payload-stores"
 
+import ProductPage from "@/components/layout/product-page-section.vue"
+
 
 export default defineComponent ({ 
-    name: "defaultTemplate",
+    name: "productPage",
     components: {
         Breadcrumbs,
         Layout,
@@ -88,7 +42,7 @@ export default defineComponent ({
         FilterComponent,
         MatterBox,
         SlateText,
-        IframeBlock
+        ProductPage
     },
     props: [],
     setup() {
@@ -392,7 +346,7 @@ export default defineComponent ({
                     
                     this.selectedImage = this.product.images[0]
                 }
-                console.log("pieceUrl", this.product.pieceUrl)
+
                 if (this.product.pieceUrl) {
                     this.pieceIframe = {
                         blockType: `iframe`,
@@ -407,7 +361,7 @@ export default defineComponent ({
                         
                     }
                 }
-                return
+                return false
 
             } catch (error) {
                 console.error("Error loading page:", error)
@@ -442,279 +396,279 @@ export default defineComponent ({
 
 
 
-.site-breadcrumbs {
-    margin-top: 40px;
-    margin-left: 8px;
-}
+// .site-breadcrumbs {
+//     margin-top: 40px;
+//     margin-left: 8px;
+// }
 
-.product-page-thumbnails-container {    
-    grid-column: span 2;
-    container-name: product-page-thumbnails;
-    container-type: inline-size;
-}
+// .product-page-thumbnails-container {    
+//     grid-column: span 2;
+//     container-name: product-page-thumbnails;
+//     container-type: inline-size;
+// }
 
-.product-page-thumbnails {
-    display: grid;
-    gap: 8px;
-    margin: 0;
-    width: 100%;
-    grid-template-columns: repeat(2, 1fr);
+// .product-page-thumbnails {
+//     display: grid;
+//     gap: 8px;
+//     margin: 0;
+//     width: 100%;
+//     grid-template-columns: repeat(2, 1fr);
 
 
-    img {
-        width: 100%;
-        opacity: .4;
-        transition: var(--transition-default);
-        filter: grayscale(1);
+//     img {
+//         width: 100%;
+//         opacity: .4;
+//         transition: var(--transition-default);
+//         filter: grayscale(1);
         
-        &:hover {
-            filter: grayscale(0.6);
-            opacity: 1;
-            cursor: pointer;
-        }
+//         &:hover {
+//             filter: grayscale(0.6);
+//             opacity: 1;
+//             cursor: pointer;
+//         }
 
-        &.main-image {
-            grid-column: span 4;
-            grid-row: 1;
-            opacity: 1;
-            filter: grayscale(0);
-            translate: 0 0;
-            cursor: default;
-        }
+//         &.main-image {
+//             grid-column: span 4;
+//             grid-row: 1;
+//             opacity: 1;
+//             filter: grayscale(0);
+//             translate: 0 0;
+//             cursor: default;
+//         }
         
-        &.__isSelected {
-            filter: grayscale(0);
-            opacity: 1;
-            translate: 0 0;
-        }
-    }
-}
+//         &.__isSelected {
+//             filter: grayscale(0);
+//             opacity: 1;
+//             translate: 0 0;
+//         }
+//     }
+// }
 
-.product-page-content {
-    display: flex;
-    flex-flow: column-reverse;
-    grid-column: span 2;
-    // contain:size;
-    overflow-y: auto;
+// .product-page-content {
+//     display: flex;
+//     flex-flow: column-reverse;
+//     grid-column: span 2;
+//     // contain:size;
+//     overflow-y: auto;
 
-    h1 {
-        margin: -6px 0 0;
-        position: absolute;
-        top: 80px;
-        flex: none; 
-    }
+//     h1 {
+//         margin: -6px 0 0;
+//         position: absolute;
+//         top: 80px;
+//         flex: none; 
+//     }
 
-    h2 {
-        margin: 4px 0 0;
-        font-size: 16px;
-        font-weight: 600;
-        opacity: .8;
-        position: absolute;
-        top: 108px;
-        flex: none; 
-    }
-}
+//     h2 {
+//         margin: 4px 0 0;
+//         font-size: 16px;
+//         font-weight: 600;
+//         opacity: .8;
+//         position: absolute;
+//         top: 108px;
+//         flex: none; 
+//     }
+// }
 
-.product-page-details {
-    background-color: var(--bg-color);
-    padding: 16px;
-    margin-top: 16px;
-    overflow-y: auto;
-    display: flex;
-    flex-flow: column;
-    justify-content: space-between;
-    gap: 16px;
-}
+// .product-page-details {
+//     background-color: var(--bg-color);
+//     padding: 16px;
+//     margin-top: 16px;
+//     overflow-y: auto;
+//     display: flex;
+//     flex-flow: column;
+//     justify-content: space-between;
+//     gap: 16px;
+// }
 
-.product-page-purchase-section {
-    // padding-top: 32px;
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-    flex: none; 
-}
+// .product-page-purchase-section {
+//     // padding-top: 32px;
+//     display: flex;
+//     justify-content: space-between;
+//     width: 100%;
+//     flex: none; 
+// }
 
-.product-page-price {
-    font-family: var(--accent-font);
-    font-size: 40px;
-    display: flex;
-    align-items: center;
-    padding-left: 16px;
-}
+// .product-page-price {
+//     font-family: var(--accent-font);
+//     font-size: 40px;
+//     display: flex;
+//     align-items: center;
+//     padding-left: 16px;
+// }
 
-.product-page-button-container {
-    font-family: var(--accent-font);
-    font-size: 24px;
+// .product-page-button-container {
+//     font-family: var(--accent-font);
+//     font-size: 24px;
 
-    a {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        text-decoration: none;
-        height: 100%;
-        font-size: 16px;
-    }
-}
+//     a {
+//         display: flex;
+//         justify-content: center;
+//         align-items: center;
+//         text-decoration: none;
+//         height: 100%;
+//         font-size: 16px;
+//     }
+// }
 
 
-.product-page {
-    display: grid;
-    grid-template-columns: 1fr 128px;
-    gap: 16px 40px;
-    padding: 16px;
-    margin: auto;
-    max-width: 144vh;
+// .product-page {
+//     display: grid;
+//     grid-template-columns: 1fr 128px;
+//     gap: 16px 40px;
+//     padding: 16px;
+//     margin: auto;
+//     max-width: 144vh;
 
-    container-name: product-page;
-    container-type: inline-size;
+//     container-name: product-page;
+//     container-type: inline-size;
     
-    .iframe-block {
-        grid-column: span 2;
-        padding-top: 8px;
-    }
-}
+//     .iframe-block {
+//         grid-column: span 2;
+//         padding-top: 8px;
+//     }
+// }
 
-.product-page-table-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 6px 0;
-    border-bottom: 1px solid rgba(0,0,0,.072);
-    font-size: 16px;
+// .product-page-table-row {
+//     display: flex;
+//     justify-content: space-between;
+//     padding: 6px 0;
+//     border-bottom: 1px solid rgba(0,0,0,.072);
+//     font-size: 16px;
 
-    &:last-child {
-        border-bottom: none;
-    }
-}
+//     &:last-child {
+//         border-bottom: none;
+//     }
+// }
 
-.product-page-table-key {
-    font-weight: 600;
-    font-family: var(--accent-font);    
-}
-.product-page-table-value {
-    font-size: 14px;
-}
+// .product-page-table-key {
+//     font-weight: 600;
+//     font-family: var(--accent-font);    
+// }
+// .product-page-table-value {
+//     font-size: 14px;
+// }
 
-@media screen and (min-width: 640px) {
-    .site-breadcrumbs {
-        margin-left: 16px;
-        margin-top: 60px;
-    }
+// @media screen and (min-width: 640px) {
+//     .site-breadcrumbs {
+//         margin-left: 16px;
+//         margin-top: 60px;
+//     }
 
-    .product-page-thumbnails-container {
-        gap: 16px;
-        // grid-column: span 1;
-    }
-}
+//     .product-page-thumbnails-container {
+//         gap: 16px;
+//         // grid-column: span 1;
+//     }
+// }
 
-@media screen and (min-width: 800px) {
+// @media screen and (min-width: 800px) {
 
-    .product-page {
-        grid-template-columns: 1fr 1fr;
-    }
-    .site-breadcrumbs {
-        margin-top: 80px;
-    }
-}
+//     .product-page {
+//         grid-template-columns: 1fr 1fr;
+//     }
+//     .site-breadcrumbs {
+//         margin-top: 80px;
+//     }
+// }
 
-.product-page-image {
-    grid-column: span 2;
-    padding-top: 64px;
+// .product-page-image {
+//     grid-column: span 2;
+//     padding-top: 64px;
 
-    img {
-        width: 100%;
-    }
-}
+//     img {
+//         width: 100%;
+//     }
+// }
 
-.product-description {
-    font-size: 14px; 
-    max-height: 100%;
-    overflow: auto;
+// .product-description {
+//     font-size: 14px; 
+//     max-height: 100%;
+//     overflow: auto;
 
-    p {
-        margin: 0;
-    }
-}
+//     p {
+//         margin: 0;
+//     }
+// }
 
-//////////////////////////////////////////////////////
-// PRODUCT PAGE CONTAINER QUERIES
-//////////////////////////////////////////////////////
-// 600px
-@container product-page (min-width: 600px) {
-    .product-page-content {
-        flex-flow: column;
+// //////////////////////////////////////////////////////
+// // PRODUCT PAGE CONTAINER QUERIES
+// //////////////////////////////////////////////////////
+// // 600px
+// @container product-page (min-width: 600px) {
+//     .product-page-content {
+//         flex-flow: column;
         
-        h1, h2 {
-            position: static;    
-        }
-    }
+//         h1, h2 {
+//             position: static;    
+//         }
+//     }
 
-    .product-page-button-container {
-        a {
-            font-size: 24px;
-        }
-    }
+//     .product-page-button-container {
+//         a {
+//             font-size: 24px;
+//         }
+//     }
     
-    .product-page-image {
-        grid-column: span 1;
-    }
+//     .product-page-image {
+//         grid-column: span 1;
+//     }
     
-    .product-page-image {
-        padding-top: 0;
-    }
+//     .product-page-image {
+//         padding-top: 0;
+//     }
     
-    .product-page-purchase-section {
-        padding-top: 32px;
-    }
+//     .product-page-purchase-section {
+//         padding-top: 32px;
+//     }
     
-    .product-page-thumbnails-container {
-        grid-column: span 1;
-    }
-}
+//     .product-page-thumbnails-container {
+//         grid-column: span 1;
+//     }
+// }
 
-// PRODUCT PAGE CONTAINER QUERY
-// 800px
+// // PRODUCT PAGE CONTAINER QUERY
+// // 800px
 
-@container product-page (min-width: 800px) {
-    .product-page {
-        grid-template-columns: 1fr 1fr;
-    }
+// @container product-page (min-width: 800px) {
+//     .product-page {
+//         grid-template-columns: 1fr 1fr;
+//     }
 
-    .product-page-content {
-        grid-column: 2/3;
-        grid-row: 1;
-    }
-    .product-page-details {
-        flex: 1 1 0; 
-        min-height: 0;  
-    }
+//     .product-page-content {
+//         grid-column: 2/3;
+//         grid-row: 1;
+//     }
+//     .product-page-details {
+//         flex: 1 1 0; 
+//         min-height: 0;  
+//     }
 
-}
+// }
 
 
-@container product-page-thumbnails (min-width: 129px) {
-    .product-page-thumbnails {
-        grid-template-columns: repeat(4, 1fr);
-    }
-}
-@container product-page-thumbnails (min-width: 320px) {
-    .product-page-thumbnails {
-        grid-template-columns: repeat(6, 1fr);
-        img {
-            &.main-image {
-                grid-column: span 6;
-            }
-        }
-    }
-}
-@container product-page-thumbnails (min-width: 480px) {
-    .product-page-thumbnails {
-        grid-template-columns: repeat(8, 1fr);
+// @container product-page-thumbnails (min-width: 129px) {
+//     .product-page-thumbnails {
+//         grid-template-columns: repeat(4, 1fr);
+//     }
+// }
+// @container product-page-thumbnails (min-width: 320px) {
+//     .product-page-thumbnails {
+//         grid-template-columns: repeat(6, 1fr);
+//         img {
+//             &.main-image {
+//                 grid-column: span 6;
+//             }
+//         }
+//     }
+// }
+// @container product-page-thumbnails (min-width: 480px) {
+//     .product-page-thumbnails {
+//         grid-template-columns: repeat(8, 1fr);
         
-        img {
-            &.main-image {
-                grid-column: span 8;
-            }
-        }
-    }
-}
+//         img {
+//             &.main-image {
+//                 grid-column: span 8;
+//             }
+//         }
+//     }
+// }
 </style>
