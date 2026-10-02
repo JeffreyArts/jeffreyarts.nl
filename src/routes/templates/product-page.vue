@@ -26,7 +26,10 @@
                 <h2 v-if="product.subTitle">{{ product.subTitle }}</h2>
                 
                 <div class="product-page-details">
-                    <SlateText class="product-description" v-if="product.description" :data="product.description" />
+                    <div class="product-description">
+                        <SlateText v-if="product.description" :data="product.description" />
+                    </div>
+
                     <div class="product-page-table" v-if="product.details && product.details.length > 0">
                         <div class="product-page-table-row" v-for="(detail, index) in product.details" :key="index">
                             <div class="product-page-table-key">{{ detail.name}}</div>
@@ -40,7 +43,7 @@
                         {{ price }}
                     </div>
                     <div class="product-page-button-container">
-                        <a :href="purchaseLink" class="button">Purchase</a>
+                        <a :href="purchaseLink" class="button">Enquire</a>
                     </div>
                 </div>
             </div>
@@ -119,11 +122,33 @@ export default defineComponent ({
         purchaseLink(){
 
             let link = "mailto:"
-            link += "?subject=Inquisition " + this.product.title
+            link += "?subject=Enquiry: " + this.product.title
+
+            let request = `I would like to purchase the ${this.product.title}`
+            
+            if (this.product.details) {
+                this.product.details.forEach(detail => {
+                    if (detail.name.toLowerCase().includes("limited")) {
+                        // check if detail.value contains a number
+                        const numberMatch = detail.value.match(/\d+/)
+                        if (!!numberMatch) {
+                            // check if title starts with a vowel
+                            const firstLetter = this.product.title.charAt(0).toLowerCase()
+                            if (["a", "e", "i", "o", "u"].includes(firstLetter)) {
+                                request = `I would like to purchase an ${this.product.title}`
+                            } else {
+                                request = `I would like to purchase a ${this.product.title}`
+                            }
+                        }
+                        console.log(detail.name.toLowerCase(), "Check number", !!numberMatch, request)
+                    }
+                })
+            }
+
             const body = [
                 "Hi Jeffrey,",
                 "",
-                `I would like to purchase the following product: ${this.product.title}`,
+                request,
                 `${ import.meta.env.VITE_CLIENT_URL + this.$route.fullPath}`,
                 "",
                 "Could you please let me know the next steps?",
