@@ -1,6 +1,6 @@
 <template>
     <section class="favorite-block" @click="toggleLike">
-        <jaoIcon :name="icon" size="medium" class="favorite-block-heart" :transitEffect="{duration: .64, effect:'shuffle'}"/>
+        <jaoIcon :name="icon" size="medium" class="favorite-block-heart" inactiveColor="transparent" :transitEffect="{duration: .64, effect:'shuffle'}"/>
         <div class="favorite-block-amount" v-html="favsNumber"></div>
     </section>
 </template>

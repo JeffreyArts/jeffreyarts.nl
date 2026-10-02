@@ -534,6 +534,10 @@ export default defineComponent({
     svg {
         display: inline-block;
         height: 100%;
+
+        .jao-icon-cell[v="0"] {
+            fill: transparent;
+        }
     }
 }
 .site-header {
