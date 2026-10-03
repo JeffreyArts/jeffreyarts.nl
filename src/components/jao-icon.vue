@@ -36,7 +36,8 @@ interface CustomGridPoint {
     y: number;
     value: 0 | 1;
 }
-interface transitEffect {
+
+export type transitEffect = {
     duration?: number;
     ease?: string;
     delay?: number,

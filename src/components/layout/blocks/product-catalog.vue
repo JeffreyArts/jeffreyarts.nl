@@ -44,7 +44,7 @@
                 </div>
             </div>
             <div class="product-catalog" v-if="filteredProducts.length > 0">
-                <productThumbnail v-for="product in filteredProducts" :options="product" @blockLoaded="blockLoaded(block)"></productThumbnail>
+                <productThumbnail v-for="product in filteredProducts" :options="product" @blockLoaded="blockLoaded()"></productThumbnail>
             </div>
             <div class="product-catalog __noProducts" v-if="filteredProducts.length <= 0">
                 <p>
@@ -58,7 +58,8 @@
 <script lang="ts">
 import { defineComponent, PropType } from "vue"
 import PayloadStore from "@/stores/payload"
-import { MediaImage, Product } from "@/types/payload-stores"
+import { type Product } from "@/types/payload-stores"
+import { type ProductThumbnailBlock } from "./product-thumbnail.vue"
 import productThumbnail from "./product-thumbnail.vue"
 import SelectBox, { SelectBoxOptions } from  "@/components/form/selectbox.vue"
 import checkBox from "@/components/form/checkbox.vue"
@@ -90,7 +91,10 @@ export default defineComponent ({
     computed: {
         filteredProducts(){
 
-            let res = [...this.options.products]
+            let res = [...this.options.products] as ProductThumbnailBlock[]
+
+            // Mandatory for ProductThumbnailBlock
+            res.forEach(product => { product.blockType = "productThumbnail"})
 
             const selectedYears = this.filterOptions.years
                 .filter(year => year.selected)
@@ -180,9 +184,6 @@ export default defineComponent ({
     },
     async beforeCreate() {
         if (!this.options.products) {
-
-            console.log(this.$route)
-
             this.payload.GET("products?depth=1").then(res => {
                 this.options.products = res.data.docs
 
@@ -249,7 +250,7 @@ export default defineComponent ({
                 this.hasEmittedBlockLoaded = true
             }
         },
-        blockLoaded(b) {
+        blockLoaded() {
             this.thumbnailsLoaded ++
             if (this.thumbnailsLoaded == this.filteredProducts.length) {
                 this.emitBlockLoaded()

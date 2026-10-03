@@ -18,7 +18,8 @@
 
 <script lang="ts">
 import { defineComponent} from "vue"
-import jaoIcon from "./../jao-icon.vue"
+import jaoIcon, {transitEffect} from "./../jao-icon.vue"
+
 
 export default defineComponent({
     name: "checkboxFormComponent",
@@ -28,7 +29,7 @@ export default defineComponent({
     data() {
         return {
             activeColor: "#222",
-            transitEffect: { duration: .1, delay:.002, effect: 'left-to-right'}
+            transitEffect: { duration: .1, delay:.002, effect: 'left-to-right'} as transitEffect
         }
     },
     props: {

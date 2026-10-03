@@ -46,7 +46,7 @@
                     </div>
                 </div>
             </div>
-
+            
             <iframeBlock v-if="pieceIframe" :options="pieceIframe" />
             
         </div>
@@ -117,6 +117,9 @@ export default defineComponent ({
     },
     computed: {
         purchaseLink(){
+            if (!this.product) {
+                return
+            }
 
             let link = "mailto:"
             link += "?subject=Enquiry: " + this.product.title
@@ -124,17 +127,18 @@ export default defineComponent ({
             let request = `I would like to purchase the ${this.product.title}`
             
             if (this.product.details) {
+                const product = this.product
                 this.product.details.forEach(detail => {
                     if (detail.name.toLowerCase().includes("limited")) {
                         // check if detail.value contains a number
                         const numberMatch = detail.value.match(/\d+/)
                         if (!!numberMatch) {
                             // check if title starts with a vowel
-                            const firstLetter = this.product.title.charAt(0).toLowerCase()
+                            const firstLetter = product.title.charAt(0).toLowerCase()
                             if (["a", "e", "i", "o", "u"].includes(firstLetter)) {
-                                request = `I would like to purchase an ${this.product.title}`
+                                request = `I would like to purchase an ${product.title}`
                             } else {
-                                request = `I would like to purchase a ${this.product.title}`
+                                request = `I would like to purchase a ${product.title}`
                             }
                         }
                         console.log(detail.name.toLowerCase(), "Check number", !!numberMatch, request)
@@ -157,7 +161,7 @@ export default defineComponent ({
         },
         price() {
             if (!this.product) {
-                return "#ERROR"
+                return 
             }
             const formatted = new Intl.NumberFormat("nl-NL", {
                 style: "currency",
@@ -170,23 +174,23 @@ export default defineComponent ({
             return formatted.replace(/\s/g, "").replace(",00", "")
         },
         pieceIframe() {
+            if (!this.product || !this.product.pieceUrl) {
+                return
+            }
+
             const iframeObject = {
                 blockType: `iframe`,
                 id: `block-1234`,
                 size: 12,
-                title: "",
-                url: "",
+                title: this.product.title,
+                url: this.product.pieceUrl,
                 showRefresh: true,
                 autoScaling: `1`,
                 portraitRatio: '3/4',
                 landscapeRatio: '16/9'
             } as IframeBlock
-
-            if (this.product && this.product.pieceUrl) {
-                iframeObject.url = this.product.pieceUrl
-                iframeObject.title = this.product.title
-            }
-
+    
+            
             return iframeObject
         }        
     },
@@ -215,7 +219,6 @@ export default defineComponent ({
     },
     methods: {
         imageLoaded() {
-            console.log("imageLoaded")
             gsap.to(this.$el.querySelectorAll(".product-page > *"), {
                 opacity: 1,
                 duration: 0.48,

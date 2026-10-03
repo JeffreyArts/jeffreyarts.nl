@@ -50,11 +50,16 @@ const generateRoutes = async (url, filename) => {
                 return
             }
 
+            let template = "default"
+            if (data.path.startsWith("/shop") || data.path.startsWith("shop")) {
+                template = "shop"
+            }
+
             result.push({
                 path: data.path,
                 name: data.title,
                 meta,
-                template: "default"
+                template
             })
         })
 

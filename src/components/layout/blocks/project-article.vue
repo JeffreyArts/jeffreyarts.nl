@@ -20,7 +20,7 @@ import SlateText, { SlateNode } from "@/components/slate-text.vue"
 import * as jaoIcons from "jao-icons"
 import jaoIcon from "@/components/jao-icon.vue"
 import DynamicImage from "@/components/dynamic-image.vue"
-import Project from "@/types/payload-stores"
+import { Project } from "@/types/payload-stores"
 
 export type ProjectArticleBlock = {
     blockType: "projectArticle"

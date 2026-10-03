@@ -11,8 +11,6 @@
             blocks: pageData.blocks
         }" @loaded="loaded"/>
 
-
-
     </section>
     <MatterBox v-if="identity && !isInIframe" :identity="identity"></MatterBox>
     <page404 v-if="is404"/>
@@ -21,6 +19,8 @@
 
 <script lang="ts">
 import { defineComponent } from "vue"
+import { Piece, MediaImage} from "@/types/payload-stores"
+
 import gsap from "gsap"
 import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 import {PageType} from "@/model/payload/page"
@@ -82,62 +82,6 @@ export default defineComponent ({
 
     },
     computed: {
-        purchaseLink(){
-            if (!this.product) {
-                return 
-            }
-
-            let link = "mailto:"
-            link += "?subject=Enquiry: " + this.product.title
-
-            let request = `I would like to purchase the ${this.product.title}`
-            
-            if (this.product.details) {
-                this.product.details.forEach(detail => {
-                    if (detail.name.toLowerCase().includes("limited")) {
-                        // check if detail.value contains a number
-                        const numberMatch = detail.value.match(/\d+/)
-                        if (!!numberMatch) {
-                            // check if title starts with a vowel
-                            const firstLetter = this.product.title.charAt(0).toLowerCase()
-                            if (["a", "e", "i", "o", "u"].includes(firstLetter)) {
-                                request = `I would like to purchase an ${this.product.title}`
-                            } else {
-                                request = `I would like to purchase a ${this.product.title}`
-                            }
-                        }
-                        console.log(detail.name.toLowerCase(), "Check number", !!numberMatch, request)
-                    }
-                })
-            }
-
-            const body = [
-                "Hi Jeffrey,",
-                "",
-                request,
-                `${ import.meta.env.VITE_CLIENT_URL + this.$route.fullPath}`,
-                "",
-                "Could you please let me know the next steps?",
-                "",
-                "Thanks!",
-            ].join("\r\n")
-            link += `&body=${encodeURIComponent(body)}`
-            return link
-        },
-        price() {
-            if (!this.product) {
-                return 
-            }
-            const formatted = new Intl.NumberFormat("nl-NL", {
-                style: "currency",
-                currency: "EUR",
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-            }).format(this.product.price)
-
-            // €1.000,00 -> €1.000,-
-            return formatted.replace(/\s/g, "").replace(",00", "")
-        },
         showFilters() {
             if (this.pageData?.filter && typeof this.pageData.displayFilters === "boolean") {
                 return this.pageData.displayFilters
@@ -190,6 +134,7 @@ export default defineComponent ({
             async handler() {
                 this.pageLoaded = false
                 this.is404 = false
+                this.product = undefined
                 
                 const blokElements = Array.from(document.querySelectorAll("#default-layout .block")) //.sort((a, b) => (a as HTMLElement).offsetTop - (b as HTMLElement).offsetTop);
                 if (blokElements.length > 0) {
@@ -272,7 +217,7 @@ export default defineComponent ({
             return import.meta.env.VITE_PAYLOAD_REST_ENDPOINT.replace("/api","") + image.sizes.image_sm.url
         },
         generateSourceSet(image: MediaImage) {
-            if (!image || !image.sizes) {
+            if (!image || typeof image.sizes !== "object" || !image.sizes) {
                 return ""
             }
             let sourceSet = ""
@@ -341,7 +286,6 @@ export default defineComponent ({
                     return true
                 }
 
-                console.log(res, product, "Product Page Data")
                 if (!res.layout) {
                     this.product = {
                         images: [],
@@ -441,7 +385,6 @@ export default defineComponent ({
             this.layoutSize = this.pageData.layout[size]
         },
         updateIdentity() {
-            console.log("Updating identity in default template", this.Payload.auth?.self?.catterpillar)
             if (this.Payload.auth && this.Payload.auth.self) {
                 const catterpillar = this.Payload.auth.self.catterpillar
                 if (!catterpillar) return 

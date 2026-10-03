@@ -51,6 +51,7 @@ const routes = [
     }
 ]
 
+
 const addRoutes = (route:  {
     path: string,
     name:  string
