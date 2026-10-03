@@ -36,15 +36,15 @@ export class PayloadPageModel {
     
     public data = undefined as PageType | undefined
 
-    async getPageByPath(path: string): Promise<PageType> {
+    async getPageByPath(path: string, forcedCollection?: string): Promise<PageType> {
         let collection = this.collectionName;
         this.data = undefined
 
-        console.log("Get Page by Path",path)
+        
         if (path.startsWith("/shop/")) {
             collection = "products";
         }
-        
+
         if (path.startsWith("/project/")) {
             collection = "projects";
         }
@@ -53,6 +53,11 @@ export class PayloadPageModel {
         if (path.startsWith("/piece/") || validatePiece.test(path)) {
             collection = "pieces";
         }
+        
+        if (forcedCollection) {
+            collection = forcedCollection;
+        }
+        
 
         try {
             const response = await axios.get(`${this.endpoint}/${collection}?where[path][equals]=${path}`);
@@ -89,6 +94,10 @@ export class PayloadPageModel {
 
             return page;
         } catch (error) {
+            if (collection === "products") {
+                // If the page is not found in products, try to fetch it from pages
+                return this.getPageByPath(path, "pages");
+            }
             throw error
         }
     }

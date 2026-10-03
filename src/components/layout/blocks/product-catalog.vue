@@ -5,7 +5,6 @@
                 <h3>Filter options</h3>
                 <hr>
                 <div class="product-catalog-filter-options">
-                    
                     <selectBox
                         class="site-filter-section"
                         name="Year"
@@ -63,10 +62,12 @@ import { MediaImage, Product } from "@/types/payload-stores"
 import productThumbnail from "./product-thumbnail.vue"
 import SelectBox, { SelectBoxOptions } from  "@/components/form/selectbox.vue"
 import checkBox from "@/components/form/checkbox.vue"
+import { Project } from "@/types/payload-stores"
 
 export type ProductCatalogBlock = {
     blockType: "productCatalog"
-    products: Product[]
+    products: Product[],
+    categories: Array<Project>,
 }
 
 export default defineComponent ({
@@ -206,16 +207,30 @@ export default defineComponent ({
                                 return y.value == v.project.id
                             }
                         }).length <= 0) {
+
+                            let selected = false
+                            if (this.options.categories.length > 0) {
+                                this.options.categories.forEach(c => {
+                                    if (typeof v.project === "object" && v.project ) {
+                                        console.log("Compare",c,v.project.id, c.id == v.project.id)
+                                        if (c.id == v.project.id) {
+                                            selected = true
+                                        }
+                                    }
+                                })
+                            }
+
                             this.filterOptions.categories.push({
                                 value: v.project.id,
                                 label: v.project.title,
-                                selected: false,
+                                selected,
                                 available: true
                             })
                         }
                     }
-
                 })
+
+
             })
         }
     },
@@ -236,7 +251,7 @@ export default defineComponent ({
         },
         blockLoaded(b) {
             this.thumbnailsLoaded ++
-            if (this.thumbnailsLoaded == this.options.products.length) {
+            if (this.thumbnailsLoaded == this.filteredProducts.length) {
                 this.emitBlockLoaded()
             }
         }

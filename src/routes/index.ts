@@ -27,7 +27,7 @@ const routes = [
     {
         path: "/shop/:slug+",
         name: "Product page",
-        component: ProductPage,
+        component: Shop,
     },
     {
         path: "/shop",

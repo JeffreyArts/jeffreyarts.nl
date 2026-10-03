@@ -24,7 +24,7 @@ import FilterComponent from "@/components/filter.vue"
 import Layout from "@/components/layout/index.vue"
 import page404 from "@/routes/error-404.vue"
 import IframeBlock from "@/components/layout/blocks/iframe.vue";
-import SlateText, { SlateNode } from "@/components/slate-text.vue"
+import { SlateNode } from "@/components/slate-text.vue"
 
 import useIdentityStore from "@/stores/identity"
 import { type IdentityField } from "@/model/catterpillar/identity"
@@ -41,7 +41,6 @@ export default defineComponent ({
         page404,
         FilterComponent,
         MatterBox,
-        SlateText,
         ProductPage
     },
     props: [],
@@ -150,14 +149,14 @@ export default defineComponent ({
                 landscapeRatio: '16/9'
                 
             },
-            product: {
-                images: [] as MediaImage[],
-                title: "",
-                subTitle: "",
-                price: 1990,
-                details: [] as {[key: string]: string}[],
-                description: undefined as SlateNode | undefined,
-                pieceUrl: "",
+            product: undefined as undefined | {
+                images: MediaImage[],
+                title: string,
+                subTitle: string,
+                price: number,
+                details: {[key: string]: string}[],
+                description: SlateNode | undefined,
+                pieceUrl: string
                 // variants: []
             },
             is404: false,

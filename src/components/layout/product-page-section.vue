@@ -1,9 +1,10 @@
 <template>
-     <div class="product-page" v-if="product.title">
+     <div class="product-page">
             <div class="product-page-image">
                 <img v-if="selectedImage"
                     :src="generateImageUrl(selectedImage)"
                     :srcset="generateSourceSet(selectedImage)"
+                    @load="imageLoaded"
                     :class="['main-image', product.subTitle ? '__hasSubtitle' : '']"
                     >
             </div>
@@ -55,6 +56,7 @@
 
 import { defineComponent, PropType } from "vue"
 
+import gsap from "gsap"
 import payloadStore from "@/stores/payload"
 import { useHead }  from "@unhead/vue"
 import { useRoute } from "vue-router"
@@ -190,7 +192,7 @@ export default defineComponent ({
     },
     data() {
         return {
-            breakpoint: "",
+            mainImageHasBeenLoaded: false,
             selectedImage: undefined as undefined | MediaImage,
         }
     },
@@ -212,6 +214,15 @@ export default defineComponent ({
     unmounted() {
     },
     methods: {
+        imageLoaded() {
+            console.log("imageLoaded")
+            gsap.to(this.$el.querySelectorAll(".product-page > *"), {
+                opacity: 1,
+                duration: 0.48,
+                ease: "power2.out",
+                stagger: 0.2
+            })
+        },
         changeImage(image: MediaImage) {
             this.selectedImage = image
         },
@@ -369,7 +380,11 @@ export default defineComponent ({
 
     container-name: product-page;
     container-type: inline-size;
-    
+
+    > * {
+        opacity: 0;
+    }
+
     .iframe-block {
         grid-column: span 2;
         padding-top: 8px;

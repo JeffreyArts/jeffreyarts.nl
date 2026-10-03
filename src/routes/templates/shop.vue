@@ -1,13 +1,18 @@
 <template>
     <section class="default-template" v-if="!is404">
         <Breadcrumbs v-if="!isInIframe"/>
+        
+        <ProductPage :product="product" v-if="product"></ProductPage>
 
-        <Layout v-if="pageData?.layout" id="default-layout" ref="default-layout" :options="{
+        <Layout v-if="pageData?.layout && !product" id="default-layout" ref="default-layout" :options="{
             layoutGap: 40,
             id: pageData.id,
             layoutSize: layoutSize,
             blocks: pageData.blocks
         }" @loaded="loaded"/>
+
+
+
     </section>
     <MatterBox v-if="identity && !isInIframe" :identity="identity"></MatterBox>
     <page404 v-if="is404"/>
@@ -28,6 +33,10 @@ import Breadcrumbs from "@/components/breadcrumbs.vue"
 import FilterComponent from "@/components/filter.vue"
 import Layout from "@/components/layout/index.vue"
 import page404 from "@/routes/error-404.vue"
+import ProductPage from "@/components/layout/product-page-section.vue"
+import { SlateNode } from "@/components/slate-text.vue"
+
+import ProductCatalog from "@/components/layout/blocks/product-catalog.vue"
 
 import useIdentityStore from "@/stores/identity"
 import { type IdentityField } from "@/model/catterpillar/identity"
@@ -40,7 +49,9 @@ export default defineComponent ({
         Layout,
         page404,
         FilterComponent,
-        MatterBox
+        MatterBox,
+        ProductPage,
+        ProductCatalog
     },
     props: [],
     setup() {
@@ -71,6 +82,62 @@ export default defineComponent ({
 
     },
     computed: {
+        purchaseLink(){
+            if (!this.product) {
+                return 
+            }
+
+            let link = "mailto:"
+            link += "?subject=Enquiry: " + this.product.title
+
+            let request = `I would like to purchase the ${this.product.title}`
+            
+            if (this.product.details) {
+                this.product.details.forEach(detail => {
+                    if (detail.name.toLowerCase().includes("limited")) {
+                        // check if detail.value contains a number
+                        const numberMatch = detail.value.match(/\d+/)
+                        if (!!numberMatch) {
+                            // check if title starts with a vowel
+                            const firstLetter = this.product.title.charAt(0).toLowerCase()
+                            if (["a", "e", "i", "o", "u"].includes(firstLetter)) {
+                                request = `I would like to purchase an ${this.product.title}`
+                            } else {
+                                request = `I would like to purchase a ${this.product.title}`
+                            }
+                        }
+                        console.log(detail.name.toLowerCase(), "Check number", !!numberMatch, request)
+                    }
+                })
+            }
+
+            const body = [
+                "Hi Jeffrey,",
+                "",
+                request,
+                `${ import.meta.env.VITE_CLIENT_URL + this.$route.fullPath}`,
+                "",
+                "Could you please let me know the next steps?",
+                "",
+                "Thanks!",
+            ].join("\r\n")
+            link += `&body=${encodeURIComponent(body)}`
+            return link
+        },
+        price() {
+            if (!this.product) {
+                return 
+            }
+            const formatted = new Intl.NumberFormat("nl-NL", {
+                style: "currency",
+                currency: "EUR",
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            }).format(this.product.price)
+
+            // €1.000,00 -> €1.000,-
+            return formatted.replace(/\s/g, "").replace(",00", "")
+        },
         showFilters() {
             if (this.pageData?.filter && typeof this.pageData.displayFilters === "boolean") {
                 return this.pageData.displayFilters
@@ -92,7 +159,30 @@ export default defineComponent ({
             pageIsLoading: null as ReturnType<typeof setTimeout> | null,
             pageData: undefined as PageType | undefined,
             identity: undefined as IdentityField | undefined,
-            isInIframe: window.self !== window.top
+            isInIframe: window.self !== window.top,
+            selectedImage: undefined as undefined | MediaImage,
+            pieceIframe: undefined as undefined | {
+                blockType: `iframe`,
+                id: `block-1234`,
+                size: 12,
+                title: string,
+                url: string,
+                showRefresh: true,
+                autoScaling: `1`,
+                portraitRatio: '3/4',
+                landscapeRatio: '16/9'
+                
+            },
+            product: undefined as undefined | {
+                images: MediaImage[],
+                title: string,
+                subTitle: string,
+                price: number,
+                details: {[key: string]: string}[],
+                description: SlateNode | undefined,
+                pieceUrl: string
+                // variants: []
+            },
         }
     },
     watch: {
@@ -172,6 +262,28 @@ export default defineComponent ({
         window.removeEventListener("resize", this.updateLayoutSize)
     },
     methods: {
+        changeImage(image: MediaImage) {
+            this.selectedImage = image
+        },
+        generateImageUrl(image: MediaImage | null | undefined) {
+            if (!image || !image.sizes) {
+                return ""
+            }
+            return import.meta.env.VITE_PAYLOAD_REST_ENDPOINT.replace("/api","") + image.sizes.image_sm.url
+        },
+        generateSourceSet(image: MediaImage) {
+            if (!image || !image.sizes) {
+                return ""
+            }
+            let sourceSet = ""
+            let src = import.meta.env.VITE_PAYLOAD_REST_ENDPOINT.replace("/api","")
+
+            
+            sourceSet += `${src}/${image.sizes.image_sm.url} ${image.sizes.image_sm.width}w,\r\n`
+            sourceSet += `${src}/${image.sizes.image_md.url} ${image.sizes.image_md.width}w,\r\n`
+            sourceSet += `${src}/${image.sizes.image_lg.url} ${image.sizes.image_lg.width}w\r\n`
+            return sourceSet
+        },
         loaded() {
             this.$nextTick(() => {
                 if (this.$route.hash === "#filter-layout") {
@@ -214,10 +326,55 @@ export default defineComponent ({
                     defaultLayout.processing = true
                 }
                 const res = await this.Payload.getPageByPath(this.$route.path)
+                const product = res as unknown as {
+                    price: number,
+                    details: Array<{[key: string]: string}>,
+                    title: string
+                    subtitle: string
+                    piece: Piece,
+                    description: SlateNode | undefined,
+                    images: Array<{id: string, image: MediaImage}>
+                }
                 
                 if (!res) {
                     this.is404 = true
                     return true
+                }
+
+                console.log(res, product, "Product Page Data")
+                if (!res.layout) {
+                    this.product = {
+                        images: [],
+                        price: product.price,
+                        details: product.details || [],
+                        title: product.title,
+                        subTitle: product.subtitle || "",
+                        description: product.description ? product.description : undefined,
+                        pieceUrl: product.piece?.path,
+                        // variants?: product.variants || []
+                    }
+    
+                    if (product.images) {
+                        this.product.images = product.images?.map(img => img.image)
+                        this.product.images = this.product.images.filter(img => img !== null && img !== undefined)
+                        
+                        this.selectedImage = this.product.images[0]
+                    }
+    
+                    if (this.product.pieceUrl) {
+                        this.pieceIframe = {
+                            blockType: `iframe`,
+                            id: `block-1234`,
+                            size: 12,
+                            title: this.product.title,
+                            url: this.product.pieceUrl,
+                            showRefresh: true,
+                            autoScaling: `1`,
+                            portraitRatio: '3/4',
+                            landscapeRatio: '16/9'
+                            
+                        }
+                    }
                 }
 
                 this.updatePageBlocks(this.pageSwitchIndex)
