@@ -62,7 +62,6 @@ export class PayloadPageModel {
         try {
             const response = await axios.get(`${this.endpoint}/${collection}?where[path][equals]=${path}`);
             const docs = response.data?.docs;
-            console.log(docs)
 
             if (!docs || docs.length !== 1) {
                 throw new Error("Page not found");

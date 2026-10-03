@@ -215,7 +215,6 @@ export default defineComponent ({
                             if (this.options.categories && this.options.categories.length > 0) {
                                 this.options.categories.forEach(c => {
                                     if (typeof v.project === "object" && v.project ) {
-                                        console.log("Compare",c,v.project.id, c.id == v.project.id)
                                         if (c.id == v.project.id) {
                                             selected = true
                                         }
