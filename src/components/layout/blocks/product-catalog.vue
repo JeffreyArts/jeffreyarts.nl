@@ -94,7 +94,9 @@ export default defineComponent ({
             let res = [...this.options.products] as ProductThumbnailBlock[]
 
             // Mandatory for ProductThumbnailBlock
-            res.forEach(product => { product.blockType = "productThumbnail"})
+            res.forEach(product => { 
+                if (!product) {return}
+                product.blockType = "productThumbnail"})
 
             const selectedYears = this.filterOptions.years
                 .filter(year => year.selected)
@@ -210,7 +212,7 @@ export default defineComponent ({
                         }).length <= 0) {
 
                             let selected = false
-                            if (this.options.categories.length > 0) {
+                            if (this.options.categories && this.options.categories.length > 0) {
                                 this.options.categories.forEach(c => {
                                     if (typeof v.project === "object" && v.project ) {
                                         console.log("Compare",c,v.project.id, c.id == v.project.id)

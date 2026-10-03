@@ -30,11 +30,6 @@ const routes = [
         component: Shop,
     },
     {
-        path: "/shop",
-        name: "Shop",
-        component: Shop,
-    },
-    {
         path: "/404",
         name: "404 | Not found",
         component: Error404,
@@ -66,6 +61,8 @@ const addRoutes = (route:  {
     let component = undefined as any
     if (route.template === "default") {
         component = defaultTemplate
+    } else if (route.template === "shop") {
+        component = Shop
     }
 
     if (route.meta.redirect) {
