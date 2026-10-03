@@ -14,6 +14,7 @@
                         :src="generateImageUrl(media)"
                         :srcset="generateSourceSet(media)"
                         @click="changeImage(media)"
+                        @mouseenter="changeImage(media)"
                         :class="selectedImage?.id == media.id ? '__isSelected' : ''"
                         v-if="product.images.length >= 0" v-for="(media, index) in product.images"
                         :key="index">
