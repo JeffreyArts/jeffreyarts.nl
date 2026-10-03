@@ -186,7 +186,7 @@ export default defineComponent ({
     },
     async beforeCreate() {
         if (!this.options.products) {
-            this.payload.GET("products?depth=1").then(res => {
+            this.payload.GET("products?depth=1&limit=320").then(res => {
                 this.options.products = res.data.docs
 
                 this.options.products.forEach(v => {

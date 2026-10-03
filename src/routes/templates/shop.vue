@@ -28,15 +28,12 @@ import MatterBox from "@/components/matter-box.vue";
 
 import payloadStore from "@/stores/payload"
 import { useHead }  from "@unhead/vue"
-import { useRoute, RouteLocationNormalizedLoaded } from "vue-router"
+import { useRoute } from "vue-router"
 import Breadcrumbs from "@/components/breadcrumbs.vue"
-import FilterComponent from "@/components/filter.vue"
 import Layout from "@/components/layout/index.vue"
 import page404 from "@/routes/error-404.vue"
 import ProductPage from "@/components/layout/product-page-section.vue"
 import { SlateNode } from "@/components/slate-text.vue"
-
-import ProductCatalog from "@/components/layout/blocks/product-catalog.vue"
 
 import useIdentityStore from "@/stores/identity"
 import { type IdentityField } from "@/model/catterpillar/identity"
@@ -48,10 +45,8 @@ export default defineComponent ({
         Breadcrumbs,
         Layout,
         page404,
-        FilterComponent,
         MatterBox,
-        ProductPage,
-        ProductCatalog
+        ProductPage
     },
     props: [],
     setup() {
@@ -143,7 +138,6 @@ export default defineComponent ({
 
                 this.pageLoaded = await this.loadPage()
 
-                    
                 // Scroll to top
                 gsap.to(window, {
                     scrollTo: { y: 0 }, // Scroll to the top of the page
