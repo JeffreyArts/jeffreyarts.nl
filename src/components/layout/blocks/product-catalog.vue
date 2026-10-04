@@ -193,7 +193,8 @@ export default defineComponent ({
                     // fill the filterOptions with the year values of the products
                     if (Array.isArray(v.year)) {
                         v.year.forEach(year => {
-                            if (this.filterOptions.years.filter(y => y.value == v.year).length <= 0) {
+                            const exists = this.filterOptions.years.some(option => option.value === year)
+                            if (!exists) {
                                 this.filterOptions.years.push({
                                     value: year,
                                     label: year,
@@ -231,8 +232,6 @@ export default defineComponent ({
                         }
                     }
                 })
-
-
             })
         }
     },
@@ -314,7 +313,7 @@ export default defineComponent ({
 }
 
 .product-catalog-filter-options {
-    padding: 16px 32px;
+    padding: 24px 32px 16px 32px;
     display: grid;
     grid-template-columns: 1fr;
     gap: 32px;
