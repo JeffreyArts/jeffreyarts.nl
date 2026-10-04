@@ -452,7 +452,7 @@ export default defineComponent ({
     overflow: auto;
 
     p {
-        margin: 0;
+        margin: 0 0 16px;
     }
 }
 
