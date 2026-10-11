@@ -106,10 +106,13 @@ export default defineComponent ({
     },
     mounted() {
         if (typeof window !== "undefined") {
+            window.addEventListener("forceUpdateAllBlockPositions", this.updateAllBlockPositions)
             window.addEventListener("resize", this.__onResizeEvent)
         }
+        
     },
     unmounted() {
+        window.removeEventListener("forceUpdateAllBlockPositions", this.updateAllBlockPositions)
         window.removeEventListener("resize", this.__onResizeEvent)
     },
     methods: {
