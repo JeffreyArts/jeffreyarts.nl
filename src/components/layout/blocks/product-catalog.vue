@@ -188,6 +188,8 @@ export default defineComponent ({
         if (!this.options.products) {
             this.payload.GET("products?where[quantity][greater_than]=0&depth=1&limit=320").then(res => {
                 this.options.products = res.data.docs
+                this.options.products = this.options.products.sort((a, b) => Number(a.price) - Number(b.price))
+                
 
                 this.options.products.forEach(v => {
                     // fill the filterOptions with the year values of the products
