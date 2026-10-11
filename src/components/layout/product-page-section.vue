@@ -76,7 +76,7 @@ import EnquiryModal from "@/routes/modals/enquiry.vue"
 import useIdentityStore from "@/stores/identity"
 import { MediaImage } from "@/types/payload-stores"
 
-type productPage = {
+export type productPage = {
     title: string,
     id: string,
     subTitle?: string
