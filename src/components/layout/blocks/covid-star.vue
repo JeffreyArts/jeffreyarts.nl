@@ -13,7 +13,6 @@
 <script lang="ts">
 import { defineComponent, PropType } from "vue"
 import axios from "axios"
-import modalComponent from "@/components/modal.vue"
 
 type imageSize = {
     filename: string
@@ -54,7 +53,6 @@ export type CovidStarBlock = {
 export default defineComponent ({
     name: "covidStarBlock",
     components: {
-        modalComponent
     }, 
     props: {
         options: {

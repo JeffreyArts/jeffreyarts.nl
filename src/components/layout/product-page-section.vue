@@ -43,13 +43,20 @@
                         {{ price }}
                     </div>
                     <div class="product-page-button-container">
-                        <a :href="purchaseLink" class="button">Enquire</a>
+                        <span class="button" @click="showEnquiry=true">Enquire</span>
+                        <!-- <a :href="purchaseLink" class="button">Enquire</a> -->
                     </div>
                 </div>
             </div>
             
             <iframeBlock v-if="pieceIframe" :options="pieceIframe" />
-            
+
+            <Modal v-if="showEnquiry" :is-open="showEnquiry" :auto-close="false" @close="closeShowEnquiry" @submit="submitEnquiry" :hide-submit="true">
+                <EnquiryModal :message="message" @submit-success="closeShowEnquiry" :product-id="product.id"></EnquiryModal>
+                <template #submit-text>
+                    Submit enquiry
+                </template>
+            </Modal>
         </div>
 </template>
 
@@ -63,12 +70,15 @@ import { useHead }  from "@unhead/vue"
 import { useRoute } from "vue-router"
 import iframeBlock, { IframeBlock } from "@/components/layout/blocks/iframe.vue";
 import SlateText, { SlateNode } from "@/components/slate-text.vue"
+import Modal from "@/components/modal.vue"
+import EnquiryModal from "@/routes/modals/enquiry.vue"
 
 import useIdentityStore from "@/stores/identity"
 import { MediaImage } from "@/types/payload-stores"
 
 type productPage = {
     title: string,
+    id: string,
     subTitle?: string
     price: number
     details: {[key: string]: string}[]
@@ -81,7 +91,9 @@ export default defineComponent ({
     name: "productPageSection",
     components: {
         SlateText,
-        iframeBlock
+        iframeBlock,
+        Modal,
+        EnquiryModal
     },
     props: {
         product: {
@@ -117,13 +129,7 @@ export default defineComponent ({
 
     },
     computed: {
-        purchaseLink(){
-            if (!this.product) {
-                return
-            }
-
-            let link = "mailto:"
-            link += "?subject=Enquiry: " + this.product.title
+        message(){
 
             let request = `I would like to purchase the ${this.product.title}`
             
@@ -153,12 +159,12 @@ export default defineComponent ({
                 request,
                 `${ import.meta.env.VITE_CLIENT_URL + this.$route.fullPath}`,
                 "",
-                "Could you please let me know the next steps?",
+                "Could you please let me know the following steps?",
                 "",
                 "Thanks!",
             ].join("\r\n")
-            link += `&body=${encodeURIComponent(body)}`
-            return link
+            
+            return body
         },
         price() {
             if (!this.product) {
@@ -197,6 +203,7 @@ export default defineComponent ({
     },
     data() {
         return {
+            showEnquiry: false,
             mainImageHasBeenLoaded: false,
             selectedImage: undefined as undefined | MediaImage,
         }
@@ -219,7 +226,17 @@ export default defineComponent ({
     unmounted() {
     },
     methods: {
+        closeShowEnquiry() {
+            this.showEnquiry = false
+        },
+        submitEnquiry() {
+
+        },
         imageLoaded() {
+            if (!this.$el) {
+                return
+            }
+            console.log(this.$el)
             gsap.to(this.$el.querySelectorAll(".product-page > *"), {
                 opacity: 1,
                 duration: 0.48,
@@ -363,7 +380,7 @@ export default defineComponent ({
     font-family: var(--accent-font);
     font-size: 24px;
 
-    a {
+    .button {
         display: flex;
         justify-content: center;
         align-items: center;

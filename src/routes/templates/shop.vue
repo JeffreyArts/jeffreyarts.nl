@@ -32,7 +32,7 @@ import { useRoute } from "vue-router"
 import Breadcrumbs from "@/components/breadcrumbs.vue"
 import Layout from "@/components/layout/index.vue"
 import page404 from "@/routes/error-404.vue"
-import ProductPage from "@/components/layout/product-page-section.vue"
+import ProductPage, {type productPage} from "@/components/layout/product-page-section.vue"
 import { SlateNode } from "@/components/slate-text.vue"
 
 import useIdentityStore from "@/stores/identity"
@@ -112,16 +112,7 @@ export default defineComponent ({
                 landscapeRatio: '16/9'
                 
             },
-            product: undefined as undefined | {
-                images: MediaImage[],
-                title: string,
-                subTitle: string,
-                price: number,
-                details: {[key: string]: string}[],
-                description: SlateNode | undefined,
-                pieceUrl: string
-                // variants: []
-            },
+            product: undefined as undefined | productPage,
         }
     },
     watch: {
@@ -265,15 +256,7 @@ export default defineComponent ({
                     defaultLayout.processing = true
                 }
                 const res = await this.Payload.getPageByPath(this.$route.path)
-                const product = res as unknown as {
-                    price: number,
-                    details: Array<{[key: string]: string}>,
-                    title: string
-                    subtitle: string
-                    piece: Piece,
-                    description: SlateNode | undefined,
-                    images: Array<{id: string, image: MediaImage}>
-                }
+                const product = res as unknown as productPage
                 
                 if (!res) {
                     this.is404 = true
@@ -283,6 +266,7 @@ export default defineComponent ({
                 if (!res.layout) {
                     this.product = {
                         images: [],
+                        id: product.id,
                         price: product.price,
                         details: product.details || [],
                         title: product.title,
