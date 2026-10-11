@@ -88,9 +88,10 @@ export default defineComponent ({
                 this.packerLayout = new Packer(this.layoutWidth, 0, { autoResize: "height" })
                 if (this.updateAllBlocksTimeout) {
                     clearTimeout(this.updateAllBlocksTimeout)
-                }
+                }    
             },
-            immediate: false
+            immediate: false,
+            deep: true
         },
         "options.blocks": {
             handler(blocks) {

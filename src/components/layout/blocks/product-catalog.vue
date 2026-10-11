@@ -159,7 +159,7 @@ export default defineComponent ({
                 })
             }
 
-            window.dispatchEvent(new Event("forceUpdateAllBlockPositions"))
+            window.dispatchEvent(new CustomEvent("forceUpdateAllBlockPositions"))
             return res
 
         }

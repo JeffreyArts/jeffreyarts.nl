@@ -178,7 +178,8 @@ export default defineComponent ({
                 this.head.patch(newHead)
                 
             }, 
-            immediate: true
+            immediate: true,
+            deep: true
         },
     },
     mounted() {

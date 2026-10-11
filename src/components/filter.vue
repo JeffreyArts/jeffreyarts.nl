@@ -136,7 +136,8 @@ export default defineComponent({
                 this.reset()
                 this.setDefaults()
             },
-            immediate: true
+            immediate: true,
+            deep: true,
         },
         "options.name": {
             handler(Name: string) {
